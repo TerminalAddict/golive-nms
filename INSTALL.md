@@ -15,13 +15,13 @@ For a production deployment, use a DNS name such as `nms.example.com` that resol
 | SNMP trap receiver | `1162` | UDP | Optional |
 
 You may change these in `.env`. For a normal direct-Caddy public HTTPS URL, set
-`GOLIVE_WEB_PORT=443`. The guided installer publishes port 80 directly in
-`direct` mode or connects Apache to Caddy through a loopback-only port in
-`apache` mode. Public certificate validation still arrives on public port 80.
+`GOLIVE_WEB_PORT=443`. The direct override publishes port 80 to Caddy; the
+Apache override connects Apache to Caddy through a loopback-only port. Public
+certificate validation still arrives on public port 80.
 
 Do not expose PostgreSQL `5432`, VictoriaMetrics `8428`, VictoriaLogs `9428`, or the internal application port `8080`. They are private Docker-network services.
 
-## 2. Guided installation (recommended)
+## 2. Clone and inspect the source
 
 Install Git and Docker Engine with the Compose plugin, then confirm these
 commands work:
@@ -32,62 +32,98 @@ docker --version
 docker compose version
 ```
 
-Clone the complete source repository and run the bootstrap installer:
+Clone the complete source repository:
 
 ```sh
 sudo mkdir -p /opt/golive-nms
 sudo chown "$USER":"$USER" /opt/golive-nms
 git clone https://github.com/TerminalAddict/golive-nms.git /opt/golive-nms
 cd /opt/golive-nms
-./install.sh
 ```
 
-The installer generates strong secrets, writes `.env` with mode `0600`,
-configures the chosen TLS layout, validates Compose, builds the GoLive app and
-backup images locally, and starts the services. It offers these TLS modes:
+The server and backup images are built locally from the checked-out Dockerfile.
+You can inspect the Dockerfile, Compose file, TLS configuration, and every
+command before running anything. GoLive does not require a published application
+image or an installation script.
+
+Create the local environment file:
+
+```sh
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+Replace every `change-me` value. Section 4 lists all required values and secret
+generation commands.
+
+## 3. Choose a TLS layout
+
+Three small Compose overrides are supplied:
 
 - `direct`: Caddy owns public ports 80 and 443.
 - `apache`: Apache keeps public port 80 and proxies only ACME challenges to
   Caddy on `127.0.0.1:18080`; the UI defaults to HTTPS port 8443.
 - `internal`: Caddy uses its private CA for a LAN-only or non-public hostname.
 
-For a host like `golive.home.example.com` where Apache already owns port 80:
+### Existing Apache on port 80
 
-```sh
-./install.sh \
-  --domain golive.home.example.com \
-  --admin-email admin@example.com \
-  --tls apache
+Set these values in `.env`:
+
+```ini
+GOLIVE_DOMAIN=golive.home.example.com
+GOLIVE_WEB_PORT=8443
+GOLIVE_ACME_PORT=18080
 ```
 
-On Debian/Ubuntu the Apache site and required proxy modules are enabled
-automatically. On other Apache layouts, the generated file
-`deploy/apache-golive-acme.generated.conf` is retained for manual installation.
-
-For an unattended direct-Caddy installation:
+Select the Apache Compose override:
 
 ```sh
-./install.sh \
-  --domain nms.example.com \
-  --admin-email admin@example.com \
-  --tls direct \
-  --yes
+cp deploy/compose.apache.yml compose.override.yml
 ```
 
-To deliberately discard an existing GoLive database and all other GoLive Docker
-volumes before reinstalling, use:
+Create a host-specific Apache configuration from the supplied template:
 
 ```sh
-./install.sh --fresh
+cp deploy/apache-golive-acme.conf deploy/apache-golive-acme.generated.conf
+nano deploy/apache-golive-acme.generated.conf
 ```
 
-The installer requires typing `DELETE` before removing volumes unless `--yes`
-is also supplied. It never removes containers or volumes belonging to other
-Compose projects.
+Replace `@GOLIVE_DOMAIN@` with the hostname and `@ACME_PORT@` with `18080`, then
+review and install it on Debian/Ubuntu:
 
-### Private/internal certificate trust
+```sh
+sudo install -m 0644 deploy/apache-golive-acme.generated.conf /etc/apache2/sites-available/golive-acme.conf
+sudo a2enmod proxy proxy_http
+sudo a2ensite golive-acme.conf
+sudo apachectl configtest
+sudo systemctl reload apache2
+```
 
-For `--tls internal`, export Caddy's root after startup:
+This leaves the existing default Apache vhost and dehydrated alias untouched.
+Only requests for this hostname's `/.well-known/acme-challenge/` path are sent
+to Caddy.
+
+### Caddy directly on public ports 80 and 443
+
+```sh
+cp deploy/compose.direct.yml compose.override.yml
+```
+
+Set `GOLIVE_WEB_PORT=443` and the public hostname in `.env`. Ensure no Apache,
+Nginx, or other service already owns host ports 80 or 443.
+
+### Private or LAN-only TLS
+
+```sh
+cp deploy/compose.internal.yml compose.override.yml
+```
+
+Set `GOLIVE_WEB_PORT=8443` and the desired hostname in `.env`.
+
+#### Trust the private certificate authority
+
+For the internal TLS layout, export Caddy's root after startup:
 
 ```sh
 docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./golive-caddy-root.crt
@@ -98,18 +134,6 @@ sudo update-ca-certificates
 Restart the browser after trusting it. Firefox may require importing the file
 under Settings → Privacy & Security → Certificates → Authorities. Trust this
 root on hosts that use the management URL for initial agent enrollment.
-
-## 3. Manual installation
-
-If you prefer to manage every file yourself, clone the same repository and copy
-the environment template:
-
-```sh
-git clone https://github.com/TerminalAddict/golive-nms.git ~/golive-nms
-cd ~/golive-nms
-cp .env.example .env
-chmod 600 .env
-```
 
 ## 4. Configure `.env` manually
 
@@ -182,12 +206,34 @@ Prefer source-restricted rules. For example, permit `9443/tcp` only from managed
 
 ## 6. Start the NMS manually
 
-Validate the rendered configuration, build the local images, and start everything:
+Inspect the selected files and rendered configuration, then build the local
+images and start everything:
 
 ```sh
 docker compose config -q
 docker compose up -d --build --wait
 docker compose ps
+```
+
+To see the entire resolved configuration rather than only validating it, run
+`docker compose config` without `-q`.
+
+### Deliberately start again with empty data
+
+The following command irreversibly removes only this Compose project's database,
+metrics, logs, Caddy certificates, and backup volume. It does not remove the
+source checkout or containers belonging to other projects:
+
+```sh
+cd /opt/golive-nms
+docker compose down -v --remove-orphans
+```
+
+Review `.env` and `compose.override.yml`, then create the empty installation:
+
+```sh
+docker compose config
+docker compose up -d --build --wait
 ```
 
 All services should be running and the application, database, and proxy should report healthy. Inspect failures with:
@@ -274,12 +320,19 @@ tail -f /var/log/golive-agent.log
 
 ### Portable tarball or source-based distribution
 
+The tarball includes a static binary, example configuration, and service files.
+Install them explicitly so each privileged filesystem change is visible:
+
 ```sh
 tar -xzf golive-agent_VERSION_linux_amd64.tar.gz
 cd golive-agent_VERSION_linux_amd64
-sudo ./install.sh
+sudo install -m 0755 golive-agent /usr/bin/golive-agent
+sudo install -d -m 0700 /var/lib/golive-agent
+sudo install -m 0600 golive-agent.env.example /etc/golive-agent.env
+sudo install -m 0644 deploy/golive-agent.service /etc/systemd/system/golive-agent.service
 sudoedit /etc/golive-agent.env
-sudo systemctl start golive-agent
+sudo systemctl daemon-reload
+sudo systemctl enable --now golive-agent
 ```
 
 Alternatively, install only the static binary and run the generated command directly:

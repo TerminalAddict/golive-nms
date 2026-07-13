@@ -9,22 +9,44 @@ For a complete deployment and firewall walkthrough, see [INSTALL.md](INSTALL.md)
 ```sh
 git clone https://github.com/TerminalAddict/golive-nms.git
 cd golive-nms
-./install.sh
+cp .env.example .env
+chmod 600 .env
+nano .env
 ```
 
-The guided installer generates all secrets, builds the GoLive application
-images locally, and supports direct public Caddy, Apache-fronted ACME
-validation, and private/internal TLS. To explicitly select the Apache layout
-used when Apache already owns public port 80:
+Replace every `change-me` value in `.env`; generate independent secrets with
+`openssl rand -hex 32`. Then select exactly one readable Compose override.
+
+For Caddy on public ports 80 and 443:
 
 ```sh
-./install.sh --domain nms.example.com --admin-email you@example.com --tls apache
+cp deploy/compose.direct.yml compose.override.yml
 ```
 
-Use `./install.sh --fresh` only when you deliberately want to remove this
-installation's containers and Docker volumes and start again. See
-[INSTALL.md](INSTALL.md) for unattended options, firewall rules, internal CA
-trust, manual installation, and agent setup.
+For an existing Apache on public port 80:
+
+```sh
+cp deploy/compose.apache.yml compose.override.yml
+```
+
+For private/LAN TLS:
+
+```sh
+cp deploy/compose.internal.yml compose.override.yml
+```
+
+Review the rendered configuration and build locally:
+
+```sh
+docker compose config
+docker compose up -d --build --wait
+docker compose ps
+```
+
+The Apache layout needs one small, explicit Apache vhost configuration before
+certificate issuance. See [INSTALL.md](INSTALL.md) for those commands, firewall
+rules, private CA trust, clean resets, and agent setup. No installation script
+or published GoLive Docker image is used.
 
 ## Safe updates
 
