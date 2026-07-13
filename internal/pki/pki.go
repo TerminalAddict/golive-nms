@@ -11,7 +11,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 	"math/big"
 	"net"
 	"net/url"

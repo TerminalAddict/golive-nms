@@ -37,15 +37,15 @@ cd /opt/golive-nms
 Download the deployment files:
 
 ```sh
-wget -O docker-compose.yml https://raw.githubusercontent.com/golive-nms/golive-nms/main/docker-compose.yml
-wget -O .env https://raw.githubusercontent.com/golive-nms/golive-nms/main/.env.example
-wget -O deploy/Caddyfile https://raw.githubusercontent.com/golive-nms/golive-nms/main/deploy/Caddyfile
+wget -O docker-compose.yml https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/docker-compose.yml
+wget -O .env https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/.env.example
+wget -O deploy/Caddyfile https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/deploy/Caddyfile
 ```
 
 If the repository is private or the images have not yet been published, clone the repository instead and let Compose build the images locally:
 
 ```sh
-git clone https://github.com/golive-nms/golive-nms.git /opt/golive-nms
+git clone https://github.com/TerminalAddict/golive-nms.git /opt/golive-nms
 cd /opt/golive-nms
 ```
 
@@ -178,7 +178,7 @@ Download the release package matching the host architecture, then install it:
 
 ```sh
 uname -m
-wget https://github.com/golive-nms/golive-nms/releases/download/VERSION/golive-agent_VERSION_linux_amd64.deb
+wget https://github.com/TerminalAddict/golive-nms/releases/download/VERSION/golive-agent_VERSION_linux_amd64.deb
 sudo dpkg -i ./golive-agent_VERSION_linux_amd64.deb
 ```
 

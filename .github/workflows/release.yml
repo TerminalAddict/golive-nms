@@ -30,8 +30,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/terminaladdict/golive-nms:${{ github.ref_name }}
+            ghcr.io/terminaladdict/golive-nms:latest
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -39,5 +39,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/golive-admin:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/golive-admin:latest
+            ghcr.io/terminaladdict/golive-admin:${{ github.ref_name }}
+            ghcr.io/terminaladdict/golive-admin:latest

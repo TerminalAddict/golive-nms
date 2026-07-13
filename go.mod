@@ -1,4 +1,4 @@
-module github.com/golive-nms/golive-nms
+module github.com/TerminalAddict/golive-nms
 
 go 1.25.0
 

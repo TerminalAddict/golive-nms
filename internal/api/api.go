@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golive-nms/golive-nms/internal/pki"
-	"github.com/golive-nms/golive-nms/internal/sso"
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/pki"
+	"github.com/TerminalAddict/golive-nms/internal/sso"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 )
 
 type API struct {

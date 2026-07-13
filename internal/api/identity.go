@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 )
 
 func (a *API) users(w http.ResponseWriter, r *http.Request) {

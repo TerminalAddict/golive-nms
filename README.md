@@ -8,8 +8,10 @@ For a complete deployment and firewall walkthrough, see [INSTALL.md](INSTALL.md)
 
 ```sh
 mkdir golive-nms && cd golive-nms
-wget -O docker-compose.yml https://raw.githubusercontent.com/golive-nms/golive-nms/main/docker-compose.yml
-wget -O .env https://raw.githubusercontent.com/golive-nms/golive-nms/main/.env.example
+mkdir -p deploy
+wget -O docker-compose.yml https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/docker-compose.yml
+wget -O .env https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/.env.example
+wget -O deploy/Caddyfile https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/deploy/Caddyfile
 ```
 
 Edit `.env` and replace every `change-me` value, then run:

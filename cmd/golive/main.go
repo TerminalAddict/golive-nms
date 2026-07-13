@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/golive-nms/golive-nms/internal/app"
+	"github.com/TerminalAddict/golive-nms/internal/app"
 )
 
 func main() {

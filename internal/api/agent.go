@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 )
 
 func (a *API) agentReport(w http.ResponseWriter, r *http.Request) {

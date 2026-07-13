@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 )
 
 func contextTimeout(r *http.Request, d time.Duration) (context.Context, context.CancelFunc) {

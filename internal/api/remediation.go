@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 	"github.com/jackc/pgx/v5"
 	"net/http"
 )

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golive-nms/golive-nms/internal/vault"
+	"github.com/TerminalAddict/golive-nms/internal/vault"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

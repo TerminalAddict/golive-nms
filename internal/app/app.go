@@ -13,14 +13,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golive-nms/golive-nms/internal/api"
-	configengine "github.com/golive-nms/golive-nms/internal/configbackup"
-	deviceevents "github.com/golive-nms/golive-nms/internal/events"
-	"github.com/golive-nms/golive-nms/internal/monitor"
-	"github.com/golive-nms/golive-nms/internal/notifier"
-	"github.com/golive-nms/golive-nms/internal/pki"
-	"github.com/golive-nms/golive-nms/internal/sso"
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/api"
+	configengine "github.com/TerminalAddict/golive-nms/internal/configbackup"
+	deviceevents "github.com/TerminalAddict/golive-nms/internal/events"
+	"github.com/TerminalAddict/golive-nms/internal/monitor"
+	"github.com/TerminalAddict/golive-nms/internal/notifier"
+	"github.com/TerminalAddict/golive-nms/internal/pki"
+	"github.com/TerminalAddict/golive-nms/internal/sso"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 )
 
 //go:embed migrations/*.sql

@@ -3,7 +3,7 @@ package monitor
 import (
 	"context"
 	"fmt"
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 	"io"
 	"net/http"
 	"strings"

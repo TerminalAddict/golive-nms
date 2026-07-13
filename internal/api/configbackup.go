@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 	"github.com/pmezard/go-difflib/difflib"
 	"net/http"
 )

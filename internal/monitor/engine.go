@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TerminalAddict/golive-nms/internal/store"
 	"github.com/go-routeros/routeros/v3"
-	"github.com/golive-nms/golive-nms/internal/store"
 	"github.com/gosnmp/gosnmp"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/net/icmp"

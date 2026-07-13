@@ -30,7 +30,7 @@ services:
       - logs-data:/storage
 
   app:
-    image: ghcr.io/golive-nms/golive-nms:${GOLIVE_VERSION:-latest}
+    image: ghcr.io/terminaladdict/golive-nms:${GOLIVE_VERSION:-latest}
     build:
       context: .
       target: app-runtime
@@ -89,7 +89,7 @@ services:
     build:
       context: .
       target: admin-runtime
-    image: ghcr.io/golive-nms/golive-admin:${GOLIVE_VERSION:-latest}
+    image: ghcr.io/terminaladdict/golive-admin:${GOLIVE_VERSION:-latest}
     restart: unless-stopped
     depends_on:
       postgres:

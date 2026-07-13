@@ -43,7 +43,7 @@ nfpms:
     id: agent-packages
     package_name: golive-agent
     vendor: GoLive NMS
-    homepage: https://github.com/golive-nms/golive-nms
+    homepage: https://github.com/TerminalAddict/golive-nms
     maintainer: GoLive NMS maintainers
     description: Portable GoLive NMS Linux monitoring agent
     license: AGPL-3.0-only
@@ -63,7 +63,7 @@ nfpms:
     id: collector-packages
     package_name: golive-collector
     vendor: GoLive NMS
-    homepage: https://github.com/golive-nms/golive-nms
+    homepage: https://github.com/TerminalAddict/golive-nms
     maintainer: GoLive NMS maintainers
     description: GoLive NMS remote site collector
     license: AGPL-3.0-only

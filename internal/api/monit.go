@@ -4,7 +4,7 @@ import (
 	"compress/gzip"
 	"crypto/subtle"
 	"encoding/xml"
-	"github.com/golive-nms/golive-nms/internal/store"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 	"io"
 	"net/http"
 	"strings"

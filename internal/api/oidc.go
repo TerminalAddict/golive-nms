@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/golive-nms/golive-nms/internal/sso"
+	"github.com/TerminalAddict/golive-nms/internal/sso"
 	"net/http"
 )
 
