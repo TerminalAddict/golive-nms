@@ -64,7 +64,7 @@ systemctl daemon-reload
 systemctl enable --now golive-agent
 ```
 
-The agent reports identity, OS/package manager and pending updates, CPU, load, memory/swap, root filesystem, aggregate network counters, process count, and uptime. Release tags produce static amd64/arm64 tarballs plus `.deb`, `.rpm`, and `.apk` packages with systemd and OpenRC definitions. Private keys are generated locally during one-time mTLS enrollment.
+The agent reports identity, OS/package manager and pending updates, CPU, load, memory/swap, root filesystem, aggregate network counters, process count, and uptime. The included GoReleaser configuration can produce static amd64/arm64 tarballs plus `.deb`, `.rpm`, and `.apk` packages with systemd and OpenRC definitions. Private keys are generated locally during one-time mTLS enrollment. GitHub Actions are intentionally disabled; releases and container images are built manually.
 
 ## Monit integration
 
@@ -124,7 +124,7 @@ Implemented now:
 - Local users, four roles, hashed sessions, service API tokens, mutation auditing, and identity-management UI.
 - Enforced per-site visibility and mutation boundaries for site managers and scoped viewers, including their API tokens.
 - VictoriaMetrics availability, latency, and host-performance series with an interactive historical dashboard chart.
-- Static amd64/arm64 agent builds and automated deb/rpm/apk/tar release packaging.
+- Static amd64/arm64 agent builds and deb/rpm/apk/tar packaging through the included GoReleaser configuration.
 - One-time mTLS enrollment, revocation, site collectors, and automatic central failback.
 - TCP/UDP syslog and SNMP trap ingestion with scoped search.
 - Dependency topology and geographic OpenStreetMap site views.
