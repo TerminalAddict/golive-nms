@@ -1,0 +1,8 @@
+#!/sbin/openrc-run
+name="GoLive NMS Remote Collector"
+command="/usr/bin/golive-collector"
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+supervisor="supervise-daemon"
+depend() { need net; after firewall; }
+start_pre() { checkpath --directory --mode 0700 /var/lib/golive-collector; checkpath --file --mode 0600 /etc/golive-collector.env; export $(grep -v '^#' /etc/golive-collector.env | xargs); }

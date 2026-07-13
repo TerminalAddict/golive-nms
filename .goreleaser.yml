@@ -1,0 +1,87 @@
+version: 2
+project_name: golive-agent
+builds:
+  - id: agent
+    main: ./cmd/golive-agent
+    binary: golive-agent
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64, arm64]
+    ldflags: ["-s -w -X main.version={{.Version}}"]
+  - id: collector
+    main: ./cmd/golive-collector
+    binary: golive-collector
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64, arm64]
+    ldflags: ["-s -w -X main.version={{.Version}}"]
+archives:
+  - ids: [agent]
+    id: agent-archive
+    formats: [tar.gz]
+    name_template: "golive-agent_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: deploy/golive-agent.service
+      - src: deploy/golive-agent.openrc
+      - src: packaging/install.sh
+        dst: install.sh
+      - src: packaging/golive-agent.env.example
+        dst: golive-agent.env.example
+  - ids: [collector]
+    id: collector-archive
+    formats: [tar.gz]
+    name_template: "golive-collector_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: deploy/golive-collector.service
+      - src: deploy/golive-collector.openrc
+      - src: packaging/install-collector.sh
+        dst: install.sh
+      - src: packaging/golive-collector.env.example
+        dst: golive-collector.env.example
+nfpms:
+  - ids: [agent]
+    id: agent-packages
+    package_name: golive-agent
+    vendor: GoLive NMS
+    homepage: https://github.com/golive-nms/golive-nms
+    maintainer: GoLive NMS maintainers
+    description: Portable GoLive NMS Linux monitoring agent
+    license: AGPL-3.0-only
+    formats: [deb, rpm, apk]
+    bindir: /usr/bin
+    contents:
+      - src: deploy/golive-agent.service
+        dst: /usr/lib/systemd/system/golive-agent.service
+      - src: deploy/golive-agent.openrc
+        dst: /etc/init.d/golive-agent
+        file_info: {mode: 0755}
+      - src: packaging/golive-agent.env.example
+        dst: /etc/golive-agent.env
+        type: config|noreplace
+        file_info: {mode: 0600}
+  - ids: [collector]
+    id: collector-packages
+    package_name: golive-collector
+    vendor: GoLive NMS
+    homepage: https://github.com/golive-nms/golive-nms
+    maintainer: GoLive NMS maintainers
+    description: GoLive NMS remote site collector
+    license: AGPL-3.0-only
+    formats: [deb, rpm, apk]
+    bindir: /usr/bin
+    contents:
+      - src: deploy/golive-collector.service
+        dst: /usr/lib/systemd/system/golive-collector.service
+      - src: deploy/golive-collector.openrc
+        dst: /etc/init.d/golive-collector
+        file_info: {mode: 0755}
+      - src: packaging/golive-collector.env.example
+        dst: /etc/golive-collector.env
+        type: config|noreplace
+        file_info: {mode: 0600}
+checksum:
+  name_template: checksums.txt
+sboms:
+  - artifacts: archive
+changelog:
+  sort: asc

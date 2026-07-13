@@ -1,0 +1,36 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25.x', cache: true}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.x', cache: npm, cache-dependency-path: web/package-lock.json}
+      - run: npm ci
+        working-directory: web
+      - run: npm test -- --run
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: mkdir -p internal/app/web && cp -r web/dist internal/app/web/dist
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - run: docker build --target app-runtime -t golive-nms:ci .
+      - run: docker build --target admin-runtime -t golive-admin:ci .
+      - run: docker compose config -q
+        env:
+          POSTGRES_PASSWORD: ci-only
+          GOLIVE_ADMIN_PASSWORD: ci-only
+          GOLIVE_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+          GOLIVE_AGENT_TOKEN: ci-only
+          GOLIVE_MONIT_PASSWORD: ci-only
+          GOLIVE_BACKUP_PASSPHRASE: ci-only-long-passphrase

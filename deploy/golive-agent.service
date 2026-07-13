@@ -1,0 +1,21 @@
+[Unit]
+Description=GoLive NMS Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/golive-agent.env
+ExecStart=/usr/bin/golive-agent
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/golive-agent
+StateDirectory=golive-agent
+StateDirectoryMode=0700
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

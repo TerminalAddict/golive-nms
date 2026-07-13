@@ -1,0 +1,19 @@
+[Unit]
+Description=GoLive NMS Remote Site Collector
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+EnvironmentFile=/etc/golive-collector.env
+ExecStart=/usr/bin/golive-collector
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/golive-collector
+StateDirectory=golive-collector
+StateDirectoryMode=0700
+ProtectHome=true
+PrivateTmp=true
+[Install]
+WantedBy=multi-user.target

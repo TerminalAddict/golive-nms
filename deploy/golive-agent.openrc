@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+name="GoLive NMS Agent"
+command="/usr/bin/golive-agent"
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/golive-agent.log"
+error_log="/var/log/golive-agent.log"
+supervisor="supervise-daemon"
+depend() { need net; after firewall; }
+start_pre() { checkpath --directory --mode 0700 /var/lib/golive-agent; checkpath --file --mode 0600 /etc/golive-agent.env; export $(grep -v '^#' /etc/golive-agent.env | xargs); }

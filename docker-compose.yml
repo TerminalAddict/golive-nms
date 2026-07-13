@@ -1,0 +1,116 @@
+name: golive-nms
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-golive}
+      POSTGRES_USER: ${POSTGRES_USER:-golive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.121.0
+    restart: unless-stopped
+    command: ["-storageDataPath=/storage", "-retentionPeriod=13"]
+    volumes:
+      - metrics-data:/storage
+
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.26.0
+    restart: unless-stopped
+    command: ["-storageDataPath=/storage", "-retentionPeriod=13"]
+    volumes:
+      - logs-data:/storage
+
+  app:
+    image: ghcr.io/golive-nms/golive-nms:${GOLIVE_VERSION:-latest}
+    build:
+      context: .
+      target: app-runtime
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GOLIVE_LISTEN: :8080
+      GOLIVE_COLLECTOR_LISTEN: :8443
+      GOLIVE_DOMAIN: ${GOLIVE_DOMAIN:-localhost}
+      GOLIVE_SYSLOG_UDP_LISTEN: :5514
+      GOLIVE_SYSLOG_TCP_LISTEN: :5514
+      GOLIVE_TRAP_LISTEN: :1162
+      GOLIVE_DATABASE_URL: postgres://${POSTGRES_USER:-golive}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-golive}?sslmode=disable
+      GOLIVE_METRICS_URL: http://victoriametrics:8428
+      GOLIVE_LOGS_URL: http://victorialogs:9428
+      GOLIVE_ADMIN_EMAIL: ${GOLIVE_ADMIN_EMAIL:-admin@example.com}
+      GOLIVE_ADMIN_PASSWORD: ${GOLIVE_ADMIN_PASSWORD:?Set GOLIVE_ADMIN_PASSWORD in .env}
+      GOLIVE_ENCRYPTION_KEY: ${GOLIVE_ENCRYPTION_KEY:?Set GOLIVE_ENCRYPTION_KEY in .env}
+      GOLIVE_AGENT_TOKEN: ${GOLIVE_AGENT_TOKEN:?Set GOLIVE_AGENT_TOKEN in .env}
+      GOLIVE_MONIT_USERNAME: ${GOLIVE_MONIT_USERNAME:-monit}
+      GOLIVE_MONIT_PASSWORD: ${GOLIVE_MONIT_PASSWORD:?Set GOLIVE_MONIT_PASSWORD in .env}
+      GOLIVE_OIDC_ISSUER: ${GOLIVE_OIDC_ISSUER:-}
+      GOLIVE_OIDC_CLIENT_ID: ${GOLIVE_OIDC_CLIENT_ID:-}
+      GOLIVE_OIDC_CLIENT_SECRET: ${GOLIVE_OIDC_CLIENT_SECRET:-}
+      GOLIVE_OIDC_REDIRECT_URL: ${GOLIVE_OIDC_REDIRECT_URL:-}
+      GOLIVE_RETENTION_DAYS: ${GOLIVE_RETENTION_DAYS:-395}
+    healthcheck:
+      test: ["CMD", "/golive", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    ports:
+      - "${GOLIVE_COLLECTOR_PORT:-9443}:8443"
+      - "${GOLIVE_SYSLOG_PORT:-5514}:5514/tcp"
+      - "${GOLIVE_SYSLOG_PORT:-5514}:5514/udp"
+      - "${GOLIVE_TRAP_PORT:-1162}:1162/udp"
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      GOLIVE_DOMAIN: ${GOLIVE_DOMAIN:-localhost}
+    ports:
+      - "${GOLIVE_WEB_PORT:-8443}:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  backup:
+    build:
+      context: .
+      target: admin-runtime
+    image: ghcr.io/golive-nms/golive-admin:${GOLIVE_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["schedule"]
+    environment:
+      GOLIVE_DATABASE_URL: postgres://${POSTGRES_USER:-golive}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-golive}?sslmode=disable
+      GOLIVE_BACKUP_PASSPHRASE: ${GOLIVE_BACKUP_PASSPHRASE:?Set GOLIVE_BACKUP_PASSPHRASE in .env}
+      GOLIVE_BACKUP_INTERVAL: ${GOLIVE_BACKUP_INTERVAL:-24h}
+      GOLIVE_BACKUP_KEEP: ${GOLIVE_BACKUP_KEEP:-10}
+    volumes:
+      - backup-data:/backups
+      - metrics-data:/metrics
+      - logs-data:/logs
+    tmpfs:
+      - /tmp:mode=0700
+
+volumes:
+  postgres-data:
+  metrics-data:
+  logs-data:
+  caddy-data:
+  caddy-config:
+  backup-data:
