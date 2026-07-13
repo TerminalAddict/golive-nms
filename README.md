@@ -64,7 +64,7 @@ systemctl daemon-reload
 systemctl enable --now golive-agent
 ```
 
-The agent reports identity, OS/package manager and pending updates, CPU, load, memory/swap, root filesystem, aggregate network counters, process count, and uptime. The included GoReleaser configuration can produce static amd64/arm64 tarballs plus `.deb`, `.rpm`, and `.apk` packages with systemd and OpenRC definitions. Private keys are generated locally during one-time mTLS enrollment. GitHub Actions are intentionally disabled; releases and container images are built manually.
+The agent reports identity, OS/package manager and pending updates, CPU, load, memory/swap, root filesystem, aggregate network counters, process count, and uptime. Version tags produce static amd64/arm64 tarballs plus `.deb`, `.rpm`, and `.apk` packages with systemd and OpenRC definitions. Private keys are generated locally during one-time mTLS enrollment. Normal pushes and pull requests run no GitHub Actions; only `v*` release tags trigger automation.
 
 ## Monit integration
 
@@ -138,6 +138,19 @@ Implemented now:
 - Linux OS/update inventory and configurable retention for operational PostgreSQL data.
 
 Before an Internet-facing production rollout, operators should still perform capacity/load testing sized to their own polling intervals and device count, validate SMTP and network-vendor checks against their infrastructure, and configure off-host replication of `/backups`.
+
+## Publishing a release
+
+Normal commits do not run GitHub Actions. To publish a release, tag the commit and push that tag:
+
+```sh
+git switch main
+git pull --ff-only
+git tag -a v0.1.0 -m "GoLive NMS v0.1.0"
+git push origin v0.1.0
+```
+
+The tag workflow creates the GitHub Release with agent and collector packages, checksums, and SBOMs. It also publishes amd64/arm64 images as both `v0.1.0` and `latest` under `ghcr.io/terminaladdict`. To deploy a particular release, set `GOLIVE_VERSION=v0.1.0` in `.env`.
 
 ## License
 

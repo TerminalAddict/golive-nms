@@ -368,7 +368,29 @@ sudo dpkg -i ./golive-agent_NEW_VERSION_linux_amd64.deb
 sudo systemctl restart golive-agent
 ```
 
-## 13. Troubleshooting checklist
+## 13. Publish a release
+
+The repository intentionally runs no CI for normal pushes or pull requests. A GitHub release is created only when you push a tag beginning with `v`:
+
+```sh
+git switch main
+git pull --ff-only
+git tag -a v0.1.0 -m "GoLive NMS v0.1.0"
+git push origin v0.1.0
+```
+
+The release workflow publishes:
+
+- Agent and remote collector tarballs for Linux amd64 and arm64.
+- DEB, RPM, and APK packages.
+- Checksums and software bills of materials.
+- A GitHub Release containing the downloadable assets.
+- `ghcr.io/terminaladdict/golive-nms:v0.1.0` and `:latest` images.
+- `ghcr.io/terminaladdict/golive-admin:v0.1.0` and `:latest` backup images.
+
+GitHub may initially mark new container packages private. In the repository or package settings, make both packages public if unauthenticated Docker installations must pull them.
+
+## 14. Troubleshooting checklist
 
 1. Confirm DNS resolves to the expected address from the agent/collector host.
 2. Confirm clocks are synchronized; certificate validation is time-sensitive.
