@@ -1,0 +1,4 @@
+{$GOLIVE_DOMAIN:localhost} {
+	tls internal
+	reverse_proxy app:8080
+}

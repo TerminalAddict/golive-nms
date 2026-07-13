@@ -9,15 +9,19 @@ For a production deployment, use a DNS name such as `nms.example.com` that resol
 | Purpose | Default host port | Protocol | Required |
 | --- | ---: | --- | --- |
 | Management web interface and initial enrollment | `8443` | TCP/HTTPS | Yes |
+| Public ACME certificate validation | `80` | TCP/HTTP | Public TLS only |
 | Agent, remote collector, and Monit collector | `9443` | TCP/HTTPS with mTLS or authentication | Yes for those integrations |
 | Syslog receiver | `5514` | TCP and UDP | Optional |
 | SNMP trap receiver | `1162` | UDP | Optional |
 
-You may change these in `.env`. For a normal public HTTPS URL, set `GOLIVE_WEB_PORT=443`. Port 80 is optional for ACME HTTP validation or redirection and is not published by the supplied Compose file; Caddy can normally validate on 443, or you can terminate TLS at an upstream reverse proxy.
+You may change these in `.env`. For a normal direct-Caddy public HTTPS URL, set
+`GOLIVE_WEB_PORT=443`. The guided installer publishes port 80 directly in
+`direct` mode or connects Apache to Caddy through a loopback-only port in
+`apache` mode. Public certificate validation still arrives on public port 80.
 
 Do not expose PostgreSQL `5432`, VictoriaMetrics `8428`, VictoriaLogs `9428`, or the internal application port `8080`. They are private Docker-network services.
 
-## 2. Prepare the Docker host
+## 2. Guided installation (recommended)
 
 Install Docker Engine with the Compose plugin, then confirm both commands work:
 
@@ -26,17 +30,80 @@ docker --version
 docker compose version
 ```
 
-Create the installation directory:
+Create the installation directory and run the bootstrap installer:
 
 ```sh
 sudo mkdir -p /opt/golive-nms/deploy
 sudo chown -R "$USER":"$USER" /opt/golive-nms
 cd /opt/golive-nms
+wget -O install.sh https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/install.sh
+chmod +x install.sh
+./install.sh
 ```
 
-Download the deployment files:
+The installer generates strong secrets, writes `.env` with mode `0600`, downloads
+the deployment files, configures the chosen TLS layout, validates Compose, pulls
+the images, and starts the services. It offers these TLS modes:
+
+- `direct`: Caddy owns public ports 80 and 443.
+- `apache`: Apache keeps public port 80 and proxies only ACME challenges to
+  Caddy on `127.0.0.1:18080`; the UI defaults to HTTPS port 8443.
+- `internal`: Caddy uses its private CA for a LAN-only or non-public hostname.
+
+For a host like `golive.home.example.com` where Apache already owns port 80:
 
 ```sh
+./install.sh \
+  --domain golive.home.example.com \
+  --admin-email admin@example.com \
+  --tls apache
+```
+
+On Debian/Ubuntu the Apache site and required proxy modules are enabled
+automatically. On other Apache layouts, the generated file
+`deploy/apache-golive-acme.conf` is retained for manual installation.
+
+For an unattended direct-Caddy installation:
+
+```sh
+./install.sh \
+  --domain nms.example.com \
+  --admin-email admin@example.com \
+  --tls direct \
+  --yes
+```
+
+To deliberately discard an existing GoLive database and all other GoLive Docker
+volumes before reinstalling, use:
+
+```sh
+./install.sh --fresh
+```
+
+The installer requires typing `DELETE` before removing volumes unless `--yes`
+is also supplied. It never removes containers or volumes belonging to other
+Compose projects.
+
+### Private/internal certificate trust
+
+For `--tls internal`, export Caddy's root after startup:
+
+```sh
+docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./golive-caddy-root.crt
+sudo cp ./golive-caddy-root.crt /usr/local/share/ca-certificates/golive-caddy-root.crt
+sudo update-ca-certificates
+```
+
+Restart the browser after trusting it. Firefox may require importing the file
+under Settings → Privacy & Security → Certificates → Authorities. Trust this
+root on hosts that use the management URL for initial agent enrollment.
+
+## 3. Manual installation
+
+If you prefer to manage every file yourself, download the deployment files:
+
+```sh
+mkdir -p deploy
 wget -O docker-compose.yml https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/docker-compose.yml
 wget -O .env https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/.env.example
 wget -O deploy/Caddyfile https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/deploy/Caddyfile
@@ -49,7 +116,7 @@ git clone https://github.com/TerminalAddict/golive-nms.git /opt/golive-nms
 cd /opt/golive-nms
 ```
 
-## 3. Configure `.env`
+## 4. Configure `.env` manually
 
 Edit the file:
 
@@ -91,7 +158,7 @@ GOLIVE_DOMAIN=nms.example.com
 
 and browse to `https://nms.example.com:8443`.
 
-## 4. Open the server firewall
+## 5. Open the server firewall
 
 For a server using the default ports and UFW:
 
@@ -118,7 +185,7 @@ sudo firewall-cmd --reload
 
 Prefer source-restricted rules. For example, permit `9443/tcp` only from managed server and site networks, and permit syslog/trap ports only from network devices. If the NMS is behind NAT, forward the selected public ports to the same ports on the Docker host.
 
-## 5. Start the NMS
+## 6. Start the NMS manually
 
 Validate the rendered configuration, pull/build images, and start everything:
 
@@ -145,7 +212,7 @@ docker compose logs --tail=200 postgres
 
 Open the management URL and sign in using `GOLIVE_ADMIN_EMAIL` and `GOLIVE_ADMIN_PASSWORD`.
 
-## 6. Initial web configuration
+## 7. Initial web configuration
 
 After signing in:
 
@@ -157,7 +224,7 @@ After signing in:
 6. Add devices, their parent relationships, and service checks.
 7. Test notification delivery before relying on it operationally.
 
-## 7. Install a Linux agent
+## 8. Install a Linux agent
 
 The agent is a static binary and does not require a language runtime or shared-library packages. It initiates all connections; no inbound firewall port is required on the monitored host.
 
@@ -263,7 +330,7 @@ openssl s_client -connect nms.example.com:9443 -servername nms.example.com </dev
 
 The collector listener requires a client certificate for agent endpoints, so an unauthenticated HTTP request may be rejected; a completed TLS connection still confirms routing and firewall reachability.
 
-## 8. Install a remote site collector
+## 9. Install a remote site collector
 
 A remote collector runs checks from another site and is useful when devices are behind a site firewall or private address space. It needs no inbound port. It connects outbound to the NMS and then connects to monitored targets within its assigned site.
 
@@ -284,7 +351,7 @@ sudo journalctl -u golive-collector -f
 
 Remove the enrollment URL/token after the certificate has been issued. The central scheduler automatically resumes a site's checks if its collector is unavailable or revoked.
 
-## 9. Configure Monit
+## 10. Configure Monit
 
 Monit sends outbound HTTPS to the collector port; it needs no inbound firewall rule on the Monit host. Add:
 
@@ -303,7 +370,7 @@ sudo monit status
 
 Use the username and password configured by `GOLIVE_MONIT_USERNAME` and `GOLIVE_MONIT_PASSWORD`.
 
-## 10. Complete firewall communication matrix
+## 11. Complete firewall communication matrix
 
 “Source → destination” describes the initiating connection.
 
@@ -330,7 +397,7 @@ Use the username and password configured by `GOLIVE_MONIT_USERNAME` and `GOLIVE_
 
 Stateful firewalls automatically permit reply traffic. Agents and collectors do not listen for NMS-initiated connections. When using a remote collector, allow its host—not necessarily the central NMS—to reach the site's monitored devices.
 
-## 11. Backups
+## 12. Backups
 
 The backup container creates encrypted archives in the `backup-data` Docker volume. Create an immediate backup before upgrades:
 
@@ -341,7 +408,7 @@ docker compose run --rm backup backup
 
 Copy encrypted archives off the Docker host as part of the normal backup policy. Test restoration periodically; the backup passphrase is mandatory.
 
-## 12. Upgrade safely
+## 13. Upgrade safely
 
 Update only this Compose project; do not stop every container on the host:
 
@@ -368,7 +435,7 @@ sudo dpkg -i ./golive-agent_NEW_VERSION_linux_amd64.deb
 sudo systemctl restart golive-agent
 ```
 
-## 13. Publish a release
+## 14. Publish a release
 
 The repository intentionally runs no CI for normal pushes or pull requests. A GitHub release is created only when you push a tag beginning with `v`:
 
@@ -390,7 +457,7 @@ The release workflow publishes:
 
 GitHub may initially mark new container packages private. In the repository or package settings, make both packages public if unauthenticated Docker installations must pull them.
 
-## 14. Troubleshooting checklist
+## 15. Troubleshooting checklist
 
 1. Confirm DNS resolves to the expected address from the agent/collector host.
 2. Confirm clocks are synchronized; certificate validation is time-sensitive.

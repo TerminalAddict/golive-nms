@@ -8,19 +8,23 @@ For a complete deployment and firewall walkthrough, see [INSTALL.md](INSTALL.md)
 
 ```sh
 mkdir golive-nms && cd golive-nms
-mkdir -p deploy
-wget -O docker-compose.yml https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/docker-compose.yml
-wget -O .env https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/.env.example
-wget -O deploy/Caddyfile https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/deploy/Caddyfile
+wget -O install.sh https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/install.sh
+chmod +x install.sh
+./install.sh
 ```
 
-Edit `.env` and replace every `change-me` value, then run:
+The guided installer generates all secrets and supports direct public Caddy,
+Apache-fronted ACME validation, and private/internal TLS. To explicitly select
+the Apache layout used when Apache already owns public port 80:
 
 ```sh
-docker compose up -d --wait
+./install.sh --domain nms.example.com --admin-email you@example.com --tls apache
 ```
 
-Open `https://localhost:8443`. The development Compose file uses Caddy's internal CA for localhost, so the browser will require a one-time certificate exception. For a public hostname, set `GOLIVE_DOMAIN` and expose standard ports 80/443 at the host or upstream proxy.
+Use `./install.sh --fresh` only when you deliberately want to remove this
+installation's containers and Docker volumes and start again. See
+[INSTALL.md](INSTALL.md) for unattended options, firewall rules, internal CA
+trust, manual installation, and agent setup.
 
 ## Safe updates
 
