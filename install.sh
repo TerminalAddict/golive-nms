@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-REPOSITORY="TerminalAddict/golive-nms"
-REF="${GOLIVE_INSTALL_REF:-main}"
-BASE_URL="${GOLIVE_INSTALL_BASE_URL:-https://raw.githubusercontent.com/${REPOSITORY}/${REF}}"
-
 TLS_MODE=""
 DOMAIN=""
 ADMIN_EMAIL=""
@@ -15,7 +11,7 @@ ASSUME_YES=0
 
 usage() {
   cat <<'EOF'
-Install GoLive NMS in the current directory.
+Install GoLive NMS from the current cloned source directory.
 
 Usage: ./install.sh [options]
 
@@ -57,14 +53,9 @@ done
 command -v docker >/dev/null 2>&1 || die "Docker is not installed"
 docker compose version >/dev/null 2>&1 || die "The Docker Compose plugin is not installed"
 command -v openssl >/dev/null 2>&1 || die "openssl is required to generate secrets"
-
-if command -v curl >/dev/null 2>&1; then
-  download() { curl -fsSL "$1" -o "$2"; }
-elif command -v wget >/dev/null 2>&1; then
-  download() { wget -qO "$2" "$1"; }
-else
-  die "curl or wget is required"
-fi
+for required_file in docker-compose.yml Dockerfile deploy/Caddyfile deploy/Caddyfile.internal deploy/apache-golive-acme.conf; do
+  [[ -f "$required_file" ]] || die "Missing ${required_file}. Clone the complete Git repository before running install.sh"
+done
 
 if [[ -r /dev/tty ]]; then
   prompt() {
@@ -135,10 +126,6 @@ if [[ -f .env && "$FRESH" -eq 0 ]]; then
   die ".env already exists. Use the existing installation, or run with --fresh to reset it"
 fi
 
-mkdir -p deploy
-download "${BASE_URL}/docker-compose.yml" docker-compose.yml
-download "${BASE_URL}/deploy/Caddyfile" deploy/Caddyfile
-
 POSTGRES_PASSWORD="$(openssl rand -hex 32)"
 ENCRYPTION_KEY="$(openssl rand -hex 32)"
 ADMIN_PASSWORD="$(openssl rand -hex 20)"
@@ -196,7 +183,7 @@ services:
       - "127.0.0.1:${ACME_PORT}:80"
 EOF
     APACHE_GENERATED="deploy/apache-golive-acme.generated.conf"
-    download "${BASE_URL}/deploy/apache-golive-acme.conf" "$APACHE_GENERATED"
+    cp deploy/apache-golive-acme.conf "$APACHE_GENERATED"
     sed -i -e "s/@GOLIVE_DOMAIN@/${DOMAIN}/g" -e "s/@ACME_PORT@/${ACME_PORT}/g" "$APACHE_GENERATED"
 
     if [[ -d /etc/apache2 ]]; then
@@ -213,8 +200,12 @@ EOF
     fi
     ;;
   internal)
-    download "${BASE_URL}/deploy/Caddyfile.internal" deploy/Caddyfile
-    rm -f compose.override.yml
+    cat >compose.override.yml <<'EOF'
+services:
+  caddy:
+    volumes:
+      - ./deploy/Caddyfile.internal:/etc/caddy/Caddyfile:ro
+EOF
     ;;
 esac
 
@@ -222,12 +213,11 @@ docker compose config -q
 
 printf '\nGoLive will use:\n  hostname: %s\n  web port: %s\n  TLS mode: %s\n' "$DOMAIN" "$WEB_PORT" "$TLS_MODE"
 if ((ASSUME_YES == 0)) && [[ -r /dev/tty ]]; then
-  answer="$(prompt 'Pull images and start GoLive now?' 'yes')"
-  [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]] || die "Configuration created; start later with docker compose up -d --wait"
+  answer="$(prompt 'Build and start GoLive now?' 'yes')"
+  [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]] || die "Configuration created; start later with docker compose up -d --build --wait"
 fi
 
-docker compose pull
-docker compose up -d --wait
+docker compose up -d --build --wait
 docker compose ps
 
 cat <<EOF

@@ -23,27 +23,28 @@ Do not expose PostgreSQL `5432`, VictoriaMetrics `8428`, VictoriaLogs `9428`, or
 
 ## 2. Guided installation (recommended)
 
-Install Docker Engine with the Compose plugin, then confirm both commands work:
+Install Git and Docker Engine with the Compose plugin, then confirm these
+commands work:
 
 ```sh
+git --version
 docker --version
 docker compose version
 ```
 
-Create the installation directory and run the bootstrap installer:
+Clone the complete source repository and run the bootstrap installer:
 
 ```sh
-sudo mkdir -p /opt/golive-nms/deploy
-sudo chown -R "$USER":"$USER" /opt/golive-nms
+sudo mkdir -p /opt/golive-nms
+sudo chown "$USER":"$USER" /opt/golive-nms
+git clone https://github.com/TerminalAddict/golive-nms.git /opt/golive-nms
 cd /opt/golive-nms
-wget -O install.sh https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/install.sh
-chmod +x install.sh
 ./install.sh
 ```
 
-The installer generates strong secrets, writes `.env` with mode `0600`, downloads
-the deployment files, configures the chosen TLS layout, validates Compose, pulls
-the images, and starts the services. It offers these TLS modes:
+The installer generates strong secrets, writes `.env` with mode `0600`,
+configures the chosen TLS layout, validates Compose, builds the GoLive app and
+backup images locally, and starts the services. It offers these TLS modes:
 
 - `direct`: Caddy owns public ports 80 and 443.
 - `apache`: Apache keeps public port 80 and proxies only ACME challenges to
@@ -100,20 +101,14 @@ root on hosts that use the management URL for initial agent enrollment.
 
 ## 3. Manual installation
 
-If you prefer to manage every file yourself, download the deployment files:
+If you prefer to manage every file yourself, clone the same repository and copy
+the environment template:
 
 ```sh
-mkdir -p deploy
-wget -O docker-compose.yml https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/docker-compose.yml
-wget -O .env https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/.env.example
-wget -O deploy/Caddyfile https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/deploy/Caddyfile
-```
-
-If the repository is private or the images have not yet been published, clone the repository instead and let Compose build the images locally:
-
-```sh
-git clone https://github.com/TerminalAddict/golive-nms.git /opt/golive-nms
-cd /opt/golive-nms
+git clone https://github.com/TerminalAddict/golive-nms.git ~/golive-nms
+cd ~/golive-nms
+cp .env.example .env
+chmod 600 .env
 ```
 
 ## 4. Configure `.env` manually
@@ -187,19 +182,12 @@ Prefer source-restricted rules. For example, permit `9443/tcp` only from managed
 
 ## 6. Start the NMS manually
 
-Validate the rendered configuration, pull/build images, and start everything:
+Validate the rendered configuration, build the local images, and start everything:
 
 ```sh
 docker compose config -q
-docker compose pull
-docker compose up -d --wait
-docker compose ps
-```
-
-If published images are not available and you cloned the source, use:
-
-```sh
 docker compose up -d --build --wait
+docker compose ps
 ```
 
 All services should be running and the application, database, and proxy should report healthy. Inspect failures with:
@@ -392,7 +380,7 @@ Use the username and password configured by `GOLIVE_MONIT_USERNAME` and `GOLIVE_
 | NMS → SMTP server | Configured SMTP port, commonly `25`, `465`, or `587` TCP | Email alerts |
 | NMS → Slack/Teams | `443/tcp` HTTPS | Webhook alerts |
 | NMS → OIDC provider | `443/tcp` HTTPS | SSO discovery and authentication |
-| Docker host → registries/GitHub | `443/tcp` HTTPS | Image pulls and upgrades |
+| Docker host → Docker Hub/GitHub | `443/tcp` HTTPS | Third-party base images, source updates, and release packages |
 | All participating hosts → DNS/NTP | `53` TCP/UDP and `123/udp`, as locally required | Name resolution and correct certificate/time validation |
 
 Stateful firewalls automatically permit reply traffic. Agents and collectors do not listen for NMS-initiated connections. When using a remote collector, allow its host—not necessarily the central NMS—to reach the site's monitored devices.
@@ -415,17 +403,10 @@ Update only this Compose project; do not stop every container on the host:
 ```sh
 cd /opt/golive-nms
 docker compose run --rm backup backup
-docker compose pull
-docker compose up -d --wait
-docker image prune
-docker compose ps
-```
-
-When installing from a cloned source tree:
-
-```sh
 git pull --ff-only
 docker compose up -d --build --wait
+docker image prune
+docker compose ps
 ```
 
 Upgrade an agent by installing the newer package over the existing one. Its state in `/var/lib/golive-agent` is retained, so it does not need a new enrollment token:
@@ -452,10 +433,9 @@ The release workflow publishes:
 - DEB, RPM, and APK packages.
 - Checksums and software bills of materials.
 - A GitHub Release containing the downloadable assets.
-- `ghcr.io/terminaladdict/golive-nms:v0.1.0` and `:latest` images.
-- `ghcr.io/terminaladdict/golive-admin:v0.1.0` and `:latest` backup images.
 
-GitHub may initially mark new container packages private. In the repository or package settings, make both packages public if unauthenticated Docker installations must pull them.
+The server and backup Docker images are deliberately not published. Each server
+installation builds them locally from its cloned source tree.
 
 ## 15. Troubleshooting checklist
 

@@ -7,15 +7,15 @@ For a complete deployment and firewall walkthrough, see [INSTALL.md](INSTALL.md)
 ## Quick start
 
 ```sh
-mkdir golive-nms && cd golive-nms
-wget -O install.sh https://raw.githubusercontent.com/TerminalAddict/golive-nms/main/install.sh
-chmod +x install.sh
+git clone https://github.com/TerminalAddict/golive-nms.git
+cd golive-nms
 ./install.sh
 ```
 
-The guided installer generates all secrets and supports direct public Caddy,
-Apache-fronted ACME validation, and private/internal TLS. To explicitly select
-the Apache layout used when Apache already owns public port 80:
+The guided installer generates all secrets, builds the GoLive application
+images locally, and supports direct public Caddy, Apache-fronted ACME
+validation, and private/internal TLS. To explicitly select the Apache layout
+used when Apache already owns public port 80:
 
 ```sh
 ./install.sh --domain nms.example.com --admin-email you@example.com --tls apache
@@ -32,8 +32,9 @@ Do not stop every container on the Docker host. Update only this project:
 
 ```sh
 cd golive-nms
-docker compose pull
-docker compose up -d --wait
+docker compose run --rm backup backup
+git pull --ff-only
+docker compose up -d --build --wait
 docker image prune
 ```
 
@@ -154,7 +155,9 @@ git tag -a v0.1.0 -m "GoLive NMS v0.1.0"
 git push origin v0.1.0
 ```
 
-The tag workflow creates the GitHub Release with agent and collector packages, checksums, and SBOMs. It also publishes amd64/arm64 images as both `v0.1.0` and `latest` under `ghcr.io/terminaladdict`. To deploy a particular release, set `GOLIVE_VERSION=v0.1.0` in `.env`.
+The tag workflow creates the GitHub Release with agent and collector packages,
+checksums, and SBOMs. Server Docker images are not published; server installs
+continue to build them locally from the cloned source tree.
 
 ## License
 
