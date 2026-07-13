@@ -29,6 +29,12 @@ For an existing Apache on public port 80:
 cp deploy/compose.apache.yml compose.override.yml
 ```
 
+For an existing Nginx on public port 80:
+
+```sh
+cp deploy/compose.nginx.yml compose.override.yml
+```
+
 For private/LAN TLS:
 
 ```sh
@@ -43,10 +49,10 @@ docker compose up -d --build --wait
 docker compose ps
 ```
 
-The Apache layout needs one small, explicit Apache vhost configuration before
-certificate issuance. See [INSTALL.md](INSTALL.md) for those commands, firewall
-rules, private CA trust, clean resets, and agent setup. No installation script
-or published GoLive Docker image is used.
+The Apache and Nginx layouts each need one small, explicit host configuration
+before certificate issuance. See [INSTALL.md](INSTALL.md) for those commands,
+firewall rules, private CA trust, clean resets, and agent setup. No installation
+script or published GoLive Docker image is used.
 
 ## Safe updates
 

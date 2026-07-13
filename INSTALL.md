@@ -16,8 +16,9 @@ For a production deployment, use a DNS name such as `nms.example.com` that resol
 
 You may change these in `.env`. For a normal direct-Caddy public HTTPS URL, set
 `GOLIVE_WEB_PORT=443`. The direct override publishes port 80 to Caddy; the
-Apache override connects Apache to Caddy through a loopback-only port. Public
-certificate validation still arrives on public port 80.
+Apache and Nginx overrides connect the existing web server to Caddy through a
+loopback-only port. Public certificate validation still arrives on public port
+80.
 
 Do not expose PostgreSQL `5432`, VictoriaMetrics `8428`, VictoriaLogs `9428`, or the internal application port `8080`. They are private Docker-network services.
 
@@ -59,11 +60,13 @@ generation commands.
 
 ## 3. Choose a TLS layout
 
-Three small Compose overrides are supplied:
+Four small Compose overrides are supplied:
 
 - `direct`: Caddy owns public ports 80 and 443.
 - `apache`: Apache keeps public port 80 and proxies only ACME challenges to
   Caddy on `127.0.0.1:18080`; the UI defaults to HTTPS port 8443.
+- `nginx`: Nginx keeps public port 80 and proxies only ACME challenges to the
+  same loopback-only Caddy listener.
 - `internal`: Caddy uses its private CA for a LAN-only or non-public hostname.
 
 ### Existing Apache on port 80
@@ -103,6 +106,53 @@ sudo systemctl reload apache2
 This leaves the existing default Apache vhost and dehydrated alias untouched.
 Only requests for this hostname's `/.well-known/acme-challenge/` path are sent
 to Caddy.
+
+### Existing Nginx on port 80
+
+Set these values in `.env`:
+
+```ini
+GOLIVE_DOMAIN=golive.home.example.com
+GOLIVE_WEB_PORT=8443
+GOLIVE_ACME_PORT=18080
+```
+
+Select the Nginx Compose override:
+
+```sh
+cp deploy/compose.nginx.yml compose.override.yml
+```
+
+Create and inspect a host-specific Nginx configuration:
+
+```sh
+cp deploy/nginx-golive-acme.conf deploy/nginx-golive-acme.generated.conf
+nano deploy/nginx-golive-acme.generated.conf
+```
+
+Replace `@GOLIVE_DOMAIN@` with the hostname, `@ACME_PORT@` with `18080`, and
+`@WEB_PORT@` with `8443`.
+
+On Debian/Ubuntu, install and enable the server block explicitly:
+
+```sh
+sudo install -m 0644 deploy/nginx-golive-acme.generated.conf /etc/nginx/sites-available/golive-acme.conf
+sudo ln -s /etc/nginx/sites-available/golive-acme.conf /etc/nginx/sites-enabled/golive-acme.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+On distributions that load `/etc/nginx/conf.d/*.conf`, use:
+
+```sh
+sudo install -m 0644 deploy/nginx-golive-acme.generated.conf /etc/nginx/conf.d/golive-acme.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+The challenge path is proxied to Caddy with the original hostname. Other HTTP
+requests for the GoLive hostname are redirected to HTTPS port 8443. Existing
+Nginx sites for other hostnames are unaffected.
 
 ### Caddy directly on public ports 80 and 443
 
