@@ -61,7 +61,7 @@ For a host like `golive.home.example.com` where Apache already owns port 80:
 
 On Debian/Ubuntu the Apache site and required proxy modules are enabled
 automatically. On other Apache layouts, the generated file
-`deploy/apache-golive-acme.conf` is retained for manual installation.
+`deploy/apache-golive-acme.generated.conf` is retained for manual installation.
 
 For an unattended direct-Caddy installation:
 

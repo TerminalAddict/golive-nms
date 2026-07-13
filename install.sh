@@ -195,20 +195,21 @@ services:
     ports:
       - "127.0.0.1:${ACME_PORT}:80"
 EOF
-    download "${BASE_URL}/deploy/apache-golive-acme.conf" deploy/apache-golive-acme.conf
-    sed -i -e "s/@GOLIVE_DOMAIN@/${DOMAIN}/g" -e "s/@ACME_PORT@/${ACME_PORT}/g" deploy/apache-golive-acme.conf
+    APACHE_GENERATED="deploy/apache-golive-acme.generated.conf"
+    download "${BASE_URL}/deploy/apache-golive-acme.conf" "$APACHE_GENERATED"
+    sed -i -e "s/@GOLIVE_DOMAIN@/${DOMAIN}/g" -e "s/@ACME_PORT@/${ACME_PORT}/g" "$APACHE_GENERATED"
 
     if [[ -d /etc/apache2 ]]; then
       SUDO=""
       ((EUID == 0)) || SUDO="sudo"
       command -v ${SUDO:-true} >/dev/null 2>&1 || die "sudo is required to configure Apache"
-      $SUDO install -m 0644 deploy/apache-golive-acme.conf /etc/apache2/sites-available/golive-acme.conf
+      $SUDO install -m 0644 "$APACHE_GENERATED" /etc/apache2/sites-available/golive-acme.conf
       $SUDO a2enmod proxy proxy_http
       $SUDO a2ensite golive-acme.conf
       $SUDO apachectl configtest
       $SUDO systemctl reload apache2
     else
-      printf 'Apache was not configured automatically. Install deploy/apache-golive-acme.conf and reload Apache.\n'
+      printf 'Apache was not configured automatically. Install %s and reload Apache.\n' "$APACHE_GENERATED"
     fi
     ;;
   internal)

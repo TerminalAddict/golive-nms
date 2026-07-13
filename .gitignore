@@ -1,5 +1,6 @@
 .env
 compose.override.yml
+deploy/apache-golive-acme.generated.conf
 data/
 dist/
 node_modules/
