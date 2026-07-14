@@ -1,8 +1,10 @@
 package api
 
 import (
-	"github.com/TerminalAddict/golive-nms/internal/store"
 	"net/http"
+	"strings"
+
+	"github.com/TerminalAddict/golive-nms/internal/store"
 )
 
 func (a *API) credentials(w http.ResponseWriter, r *http.Request) {
@@ -25,6 +27,10 @@ func (a *API) createCredential(w http.ResponseWriter, r *http.Request) {
 	}
 	if c.Name == "" || len(c.Secret) == 0 {
 		problem(w, 400, errText("name and secret are required"))
+		return
+	}
+	if c.Kind == "monit" && (strings.TrimSpace(c.Secret["username"]) == "" || c.Secret["password"] == "") {
+		problem(w, 400, errText("Monit username and password are required"))
 		return
 	}
 	v, e := a.s.CreateCredential(r.Context(), c)

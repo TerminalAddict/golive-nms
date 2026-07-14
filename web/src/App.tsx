@@ -1443,7 +1443,7 @@ function IdentitySettings({ current }: { current: User }) {
           <Title text="Network credentials" />
           <div className="rows">
             {credentials
-              .filter((c) => c.kind === "snmp" || c.kind === "routeros")
+              .filter((c) => c.kind === "snmp" || c.kind === "routeros" || c.kind === "monit")
               .map((c) => (
                 <div className="row" key={c.id}>
                   <div className="grow">
@@ -1547,6 +1547,29 @@ function IdentitySettings({ current }: { current: User }) {
               placeholder="Optional CA certificate PEM"
             />
             <button className="primary">Save RouterOS credential</button>
+          </form>
+          <form
+            className="settingsForm"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              await api.createCredential({
+                name: String(f.get("name")),
+                kind: "monit",
+                secret: {
+                  username: String(f.get("username")),
+                  password: String(f.get("password")),
+                },
+              });
+              e.currentTarget.reset();
+              refresh();
+            }}
+          >
+            <h3>Add Monit remote-control credential</h3>
+            <input required name="name" placeholder="Credential name" />
+            <input required name="username" placeholder="Monit HTTP username" />
+            <input required name="password" type="password" placeholder="Monit HTTP password" />
+            <button className="primary">Save Monit credential</button>
           </form>
         </div>
       )}
@@ -1864,12 +1887,25 @@ function DeviceModal({
   const [parent, setParent] = useState(device?.ParentID ?? "");
   const [tags, setTags] = useState((device?.Tags ?? []).join(", "));
   const [busy, setBusy] = useState(false);
+  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [monitURL, setMonitURL] = useState("");
+  const [monitCredential, setMonitCredential] = useState("");
+  const [actionBusy, setActionBusy] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
   useEffect(() => {
     api.sites().then((v) => {
       setSites(v);
       if (v.length && !device?.SiteID) setSite(v[0].id);
     });
   }, [device?.SiteID]);
+  useEffect(() => {
+    if (!device) return;
+    api.credentials().then((v) => setCredentials(v.filter((c) => c.kind === "monit")));
+    api.monitControl(device.ID).then((v) => {
+      setMonitURL(v.URL ?? "");
+      setMonitCredential(v.CredentialID ?? "");
+    });
+  }, [device]);
   const reported = device ? monitServices.filter((s) => s.DeviceID === device.ID) : [];
   return (
     <Modal title={device ? `Manage ${device.Name}` : "Add a monitored device"} onClose={onClose}>
@@ -1957,10 +1993,65 @@ function DeviceModal({
                   <b>{service.Name}</b>
                   <small>{monitType(service.Type)} · {service.Monitor ? "monitored" : "not monitored"}</small>
                 </span>
-                <Status value={service.Monitor === 0 ? "unknown" : service.Status === 0 ? "up" : "down"} />
+                <div className="monitServiceActions">
+                  <Status value={service.Monitor === 0 ? "unknown" : service.Status === 0 ? "up" : "down"} />
+                  <div>
+                    {(service.Monitor === 0 ? ["monitor"] : ["start", "stop", "restart", "unmonitor"]).map((action) => (
+                      <button
+                        type="button"
+                        className="miniAction"
+                        disabled={!!actionBusy || !monitURL || !monitCredential}
+                        key={action}
+                        onClick={async () => {
+                          if ((action === "stop" || action === "restart" || action === "unmonitor") && !window.confirm(`${action} ${service.Name}?`)) return;
+                          setActionBusy(`${service.Name}:${action}`);
+                          setActionMessage("");
+                          try {
+                            const result = await api.runMonitAction(device.ID, service.Name, action);
+                            setActionMessage(`${service.Name}: ${result.Message}`);
+                          } catch (error) {
+                            setActionMessage(error instanceof Error ? error.message : "Monit command failed");
+                          } finally {
+                            setActionBusy("");
+                          }
+                        }}
+                      >
+                        {actionBusy === `${service.Name}:${action}` ? "sending…" : action}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             ))}
             {!reported.length && <small>No Monit services have been reported yet.</small>}
+          </div>
+        )}
+        {device && reported.length > 0 && (
+          <div className="monitControl">
+            <b>Monit remote control</b>
+            <small>GoLive connects from the NMS server to this host.</small>
+            <input value={monitURL} onChange={(e) => setMonitURL(e.target.value)} placeholder={`http://${address || "host"}:2812`} />
+            <select value={monitCredential} onChange={(e) => setMonitCredential(e.target.value)}>
+              <option value="">Select a Monit credential</option>
+              {credentials.map((credential) => <option key={credential.id} value={credential.id}>{credential.name}</option>)}
+            </select>
+            <button
+              type="button"
+              className="secondary"
+              disabled={!monitURL || !monitCredential || !!actionBusy}
+              onClick={async () => {
+                setActionBusy("config");
+                setActionMessage("");
+                try {
+                  await api.setMonitControl(device.ID, monitURL, monitCredential);
+                  setActionMessage("Monit remote-control settings saved.");
+                } catch (error) {
+                  setActionMessage(error instanceof Error ? error.message : "Could not save Monit settings");
+                } finally { setActionBusy(""); }
+              }}
+            >{actionBusy === "config" ? "Saving…" : "Save remote control"}</button>
+            {actionMessage && <small className="actionMessage">{actionMessage}</small>}
+            {!credentials.length && <small>Create a Monit credential under Settings → Network credentials first.</small>}
           </div>
         )}
         <button className="primary" disabled={busy}>

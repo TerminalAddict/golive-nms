@@ -33,6 +33,23 @@ export interface Credential {
   kind: string;
   secret?: Record<string, string>;
 }
+export interface MonitControl {
+  DeviceID: string;
+  URL: string;
+  CredentialID: string;
+  CredentialName?: string;
+  UpdatedAt?: string;
+  Enabled?: boolean;
+}
+export interface MonitAction {
+  ID: string;
+  DeviceID: string;
+  Service: string;
+  Action: string;
+  Success: boolean;
+  Message: string;
+  RequestedAt: string;
+}
 export interface NotificationChannel {
   id: string;
   name: string;
@@ -192,6 +209,20 @@ export const api = {
   summary: () => request<Summary>("/summary"),
   devices: () => request<Device[]>("/devices"),
   monitServices: () => request<MonitService[]>("/monit-services"),
+  monitControl: (deviceId: string) =>
+    request<MonitControl>(`/devices/${deviceId}/monit-control`),
+  setMonitControl: (deviceId: string, URL: string, CredentialID: string) =>
+    request<MonitControl>(`/devices/${deviceId}/monit-control`, {
+      method: "PUT",
+      body: JSON.stringify({ URL, CredentialID }),
+    }),
+  monitActions: (deviceId: string) =>
+    request<MonitAction[]>(`/devices/${deviceId}/monit-actions`),
+  runMonitAction: (deviceId: string, Service: string, Action: string) =>
+    request<MonitAction>(`/devices/${deviceId}/monit-actions`, {
+      method: "POST",
+      body: JSON.stringify({ Service, Action }),
+    }),
   checks: () => request<Check[]>("/checks"),
   history: (id: string) => request<CheckSample[]>(`/checks/${id}/history`),
   incidents: () => request<Incident[]>("/incidents"),

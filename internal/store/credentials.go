@@ -30,7 +30,7 @@ func (s *Store) Credentials(ctx context.Context) ([]Credential, error) {
 	return out, rows.Err()
 }
 func (s *Store) CreateCredential(ctx context.Context, c Credential) (Credential, error) {
-	if c.Kind != "snmp" && c.Kind != "ssh" && c.Kind != "smtp" && c.Kind != "webhook" && c.Kind != "routeros" {
+	if c.Kind != "snmp" && c.Kind != "ssh" && c.Kind != "smtp" && c.Kind != "webhook" && c.Kind != "routeros" && c.Kind != "monit" {
 		return Credential{}, errors.New("invalid credential kind")
 	}
 	raw, err := json.Marshal(c.Secret)

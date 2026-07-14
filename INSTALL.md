@@ -11,6 +11,7 @@ For a production deployment, use a DNS name such as `nms.example.com` that resol
 | Management web interface and initial enrollment | `8443` | TCP/HTTPS | Yes |
 | Public ACME certificate validation | `80` | TCP/HTTP | Public TLS only |
 | Agent, remote collector, and Monit collector | `9443` | TCP/HTTPS with mTLS or authentication | Yes for those integrations |
+| Monit remote control | `2812` on each Monit host | TCP/HTTP(S), NMS → Monit host | Only when remote control is enabled |
 | Syslog receiver | `5514` | TCP and UDP | Optional |
 | SNMP trap receiver | `1162` | UDP | Optional |
 
@@ -464,6 +465,37 @@ The first valid report creates the host automatically. In **Devices**, select
 the host name to edit its address, site, parent relationship, type, and tags and
 to inspect every service reported by Monit.
 
+### Remote control of Monit services
+
+GoLive supports five Monit service commands: **start**, **stop**, **restart**, **monitor**, and **unmonitor**. This traffic travels in the opposite direction to reports: the GoLive `app` container connects to TCP port `2812` on the monitored host.
+
+On each Monit host, enable the HTTP interface with a dedicated account:
+
+```monit
+set httpd port 2812 and
+    allow golive:REPLACE_WITH_A_LONG_UNIQUE_PASSWORD
+    allow localhost
+```
+
+Then restrict TCP `2812` at the host or network firewall to the NMS server's source IP. For UFW, run this on the **monitored host**, replacing the example address with the address that host sees for your NMS server:
+
+```bash
+sudo ufw allow proto tcp from 103.123.165.253 to any port 2812 comment 'GoLive Monit control'
+sudo monit -t
+sudo systemctl reload monit
+```
+
+Do not expose `2812` to the whole internet. Basic authentication over plain HTTP does not encrypt the password or command. Use a private network/VPN between GoLive and the host, or configure TLS on Monit's HTTP interface and use an `https://host:2812` endpoint with a certificate trusted by the GoLive container.
+
+Configure GoLive:
+
+1. Open **Settings → Network credentials** and add a **Monit remote-control credential** using the same username and password.
+2. Open **Devices**, click the device name, and find **Monit remote control**.
+3. Enter the URL reachable from the GoLive container, such as `http://10.0.0.12:2812`, select the credential, and save.
+4. Use the action buttons beside a reported Monit service. GoLive records every attempt and its result in the database and audit log.
+
+The `set mmonit .../collector` credentials remain separate from the port-2812 credentials. `register without credentials` is fine for reporting; it does not supply credentials for remote commands.
+
 ## 11. Complete firewall communication matrix
 
 “Source → destination” describes the initiating connection.
@@ -476,6 +508,7 @@ to inspect every service reported by Monit.
 | Remote collector → NMS | Web port, TCP/HTTPS | One-time CSR enrollment only |
 | Remote collector → NMS | `9443/tcp` HTTPS | Assignments and check results |
 | Monit host → NMS | `9443/tcp` HTTPS | Monit XML collector |
+| NMS → Monit host | `2812/tcp` HTTP(S) | Optional start/stop/restart/monitor/unmonitor commands; restrict source to the NMS |
 | Device/syslog sender → NMS | `5514/tcp` or `5514/udp` | Optional syslog ingestion |
 | SNMP device → NMS | `1162/udp` | Optional SNMP traps |
 | NMS or remote collector → target | ICMP echo/reply | Ping checks |

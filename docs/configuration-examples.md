@@ -41,6 +41,16 @@ set eventqueue basedir /var/lib/monit/events slots 1000
 set mmonit https://monit:REPLACE_PASSWORD@nms.example.com:9443/collector
 ```
 
+Optional remote control (also restrict TCP `2812` to the NMS source address in the host firewall):
+
+```monit
+set httpd port 2812 and
+    allow golive:REPLACE_WITH_A_DIFFERENT_LONG_PASSWORD
+    allow localhost
+```
+
+Create a Monit credential in GoLive, then set the device's remote-control URL to the private/VPN address, for example `http://10.0.0.12:2812`. Prefer Monit HTTPS when traffic cannot stay on a trusted private network.
+
 ## Site maintenance
 
 Times use RFC 3339 UTC values:

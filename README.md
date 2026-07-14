@@ -110,6 +110,8 @@ set mmonit https://monit:YOUR_MONIT_PASSWORD@nms.example.com:9443/collector
 
 GoLive accepts Monit v2 status and event XML, including gzip compression, maintains host/service state, and turns failing Monit events into GoLive incidents.
 
+GoLive can also start, stop, restart, monitor, and unmonitor reported services through Monit's HTTP interface. Create a **Monit remote-control credential** under **Settings → Network credentials**, open the device's **Manage** dialog, and set its endpoint (for example `http://10.0.0.12:2812`). The Monit host must allow inbound TCP `2812` from the NMS server only. See [INSTALL.md](INSTALL.md#remote-control-of-monit-services) for the complete and security-conscious configuration.
+
 ## Remote collectors and secure enrollment
 
 Generate a 15-minute enrollment command in Settings. Agents and collectors create their key locally, submit a CSR, and use the issued certificate on the collector port. A site collector receives only its site's checks; central polling resumes after an outage or revocation.
@@ -154,6 +156,7 @@ Implemented now:
 - Ping, HTTP, TCP, and SNMP v2c/v3 checks, durable scheduling, latency samples, dependency suppression, incident deduplication, acknowledgement, and recovery.
 - Encrypted SNMP/SMTP/webhook credentials and email, Slack, and Teams notification channels.
 - Monit `/collector` compatibility for complete status snapshots and state-change events.
+- Role- and site-scoped Monit start, stop, restart, monitor, and unmonitor controls with encrypted credentials and an action audit trail.
 - Local users, four roles, hashed sessions, service API tokens, mutation auditing, and identity-management UI.
 - Enforced per-site visibility and mutation boundaries for site managers and scoped viewers, including their API tokens.
 - VictoriaMetrics availability, latency, and host-performance series with an interactive historical dashboard chart.

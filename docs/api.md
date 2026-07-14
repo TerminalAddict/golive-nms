@@ -18,6 +18,8 @@ All management resources are below `/api/v1`. JSON errors have the form `{"error
 | `POST` | `/api/v1/agent/report` | Authenticated agent report ingestion |
 | `POST` | `/collector` | Monit-compatible XML collector |
 | `GET` | `/api/v1/monit-services` | Site-scoped Monit service inventory and status |
+| `GET`, `PUT` | `/api/v1/devices/{id}/monit-control` | Read or configure a device's Monit endpoint and encrypted credential reference |
+| `GET`, `POST` | `/api/v1/devices/{id}/monit-actions` | Read command history or issue an allow-listed service action |
 | `GET`, `POST` | `/api/v1/users` | Administrator user management |
 | `GET`, `POST` | `/api/v1/api-tokens` | Service-token management |
 | `GET`, `POST` | `/api/v1/credentials` | Encrypted credentials |
