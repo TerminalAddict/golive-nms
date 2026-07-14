@@ -14,6 +14,7 @@ import {
   ScrollText,
   FileDiff,
   ShieldCheck,
+  ArrowLeft,
 } from "lucide-react";
 import { api } from "./api";
 import type {
@@ -145,6 +146,10 @@ function Console({ user }: { user: User }) {
   const [modal, setModal] = useState<"device" | "check" | null>(null);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [error, setError] = useState("");
+  const navigate = (next: View) => {
+    setEditingDevice(null);
+    setView(next);
+  };
   const load = useCallback(async () => {
     try {
       const [s, d, c, ms, i, ev] = await Promise.all([
@@ -185,14 +190,14 @@ function Console({ user }: { user: User }) {
             icon={<LayoutDashboard />}
             label="Overview"
             active={view === "overview"}
-            onClick={() => setView("overview")}
+            onClick={() => navigate("overview")}
           />
           <Nav
             icon={<Server />}
             label="Devices"
             count={summary.Total}
             active={view === "devices"}
-            onClick={() => setView("devices")}
+            onClick={() => navigate("devices")}
           />
           <Nav
             icon={<Bell />}
@@ -200,35 +205,35 @@ function Console({ user }: { user: User }) {
             count={summary.OpenIncidents}
             danger
             active={view === "incidents"}
-            onClick={() => setView("incidents")}
+            onClick={() => navigate("incidents")}
           />
           <Nav
             icon={<Map />}
             label="Topology"
             active={view === "topology"}
-            onClick={() => setView("topology")}
+            onClick={() => navigate("topology")}
           />
           <Nav
             icon={<ScrollText />}
             label="Events"
             active={view === "events"}
-            onClick={() => setView("events")}
+            onClick={() => navigate("events")}
           />
           <Nav
             icon={<FileDiff />}
             label="Configuration"
             active={view === "configuration"}
-            onClick={() => setView("configuration")}
+            onClick={() => navigate("configuration")}
           />
           <Nav
             icon={<ShieldCheck />}
             label="Remediation"
             active={view === "remediation"}
-            onClick={() => setView("remediation")}
+            onClick={() => navigate("remediation")}
           />
         </nav>
         <div className="asideBottom">
-          <button onClick={() => setView("settings")}>
+          <button onClick={() => navigate("settings")}>
             <Settings />
             Settings
           </button>
@@ -248,14 +253,16 @@ function Console({ user }: { user: User }) {
           </button>
           <div>
             <small>NETWORK OPERATIONS</small>
-            <h1>{view[0].toUpperCase() + view.slice(1)}</h1>
+            <h1>{view === "devices" && editingDevice ? editingDevice.Name : view[0].toUpperCase() + view.slice(1)}</h1>
           </div>
           <div className="live">
             <i /> Live
           </div>
-          <button className="primary" onClick={() => setModal("device")}>
-            <Plus /> Add device
-          </button>
+          {!editingDevice && (
+            <button className="primary" onClick={() => setModal("device")}>
+              <Plus /> Add device
+            </button>
+          )}
         </header>
         {error && (
           <div className="error">
@@ -271,7 +278,18 @@ function Console({ user }: { user: User }) {
             incidents={incidents}
           />
         )}{" "}
-        {view === "devices" && (
+        {view === "devices" && (editingDevice ? (
+          <DeviceModal
+            device={editingDevice}
+            devices={devices}
+            monitServices={monitServices}
+            onClose={() => setEditingDevice(null)}
+            onSaved={(updated) => {
+              if (updated) setEditingDevice(updated);
+              load();
+            }}
+          />
+        ) : (
           <Devices
             devices={devices}
             checks={checks}
@@ -280,7 +298,7 @@ function Console({ user }: { user: User }) {
             onAddCheck={() => setModal("check")}
             onEdit={setEditingDevice}
           />
-        )}{" "}
+        ))}{" "}
         {view === "incidents" && (
           <Incidents
             incidents={incidents}
@@ -312,18 +330,6 @@ function Console({ user }: { user: User }) {
           onClose={() => setModal(null)}
           onSaved={() => {
             setModal(null);
-            load();
-          }}
-        />
-      )}
-      {editingDevice && (
-        <DeviceModal
-          device={editingDevice}
-          devices={devices}
-          monitServices={monitServices}
-          onClose={() => setEditingDevice(null)}
-          onSaved={() => {
-            setEditingDevice(null);
             load();
           }}
         />
@@ -677,10 +683,17 @@ function Devices({
           <span>Status</span>
         </div>
         {devices.map((d) => (
-          <div className="trow" key={d.ID}>
+          <div
+            className={`trow ${canManage ? "deviceRow" : ""}`}
+            key={d.ID}
+            role={canManage ? "button" : undefined}
+            tabIndex={canManage ? 0 : undefined}
+            onClick={() => canManage && onEdit(d)}
+            onKeyDown={(event) => { if (canManage && (event.key === "Enter" || event.key === " ")) onEdit(d); }}
+          >
             <div>
               {canManage ? (
-                <button className="deviceLink" onClick={() => onEdit(d)}>{d.Name}</button>
+                <b className="deviceLink">{d.Name}</b>
               ) : (
                 <b>{d.Name}</b>
               )}
@@ -1923,7 +1936,7 @@ function DeviceModal({
   devices: Device[];
   monitServices: MonitService[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (device?: Device) => void;
 }) {
   const [name, setName] = useState(device?.Name ?? "");
   const [address, setAddress] = useState(device?.Address ?? "");
@@ -1938,6 +1951,7 @@ function DeviceModal({
   const [monitCredential, setMonitCredential] = useState("");
   const [actionBusy, setActionBusy] = useState("");
   const [actionFeedback, setActionFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const [saveFeedback, setSaveFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [controlReady, setControlReady] = useState(false);
   const [actionHistory, setActionHistory] = useState<MonitAction[]>([]);
   useEffect(() => {
@@ -1957,12 +1971,12 @@ function DeviceModal({
     api.monitActions(device.ID).then(setActionHistory);
   }, [device]);
   const reported = device ? monitServices.filter((s) => s.DeviceID === device.ID) : [];
-  return (
-    <Modal title={device ? `Manage ${device.Name}` : "Add a monitored device"} onClose={onClose}>
-      <form
+  const editor = (
+      <form className={device ? "deviceEditorForm" : undefined}
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
+          setSaveFeedback(null);
           try {
             const value = {
               Name: name,
@@ -1972,9 +1986,16 @@ function DeviceModal({
               ParentID: parent,
               Tags: tags.split(",").map((v) => v.trim()).filter(Boolean),
             };
-            if (device) await api.updateDevice(device.ID, value);
-            else await api.createDevice(value);
-            onSaved();
+            if (device) {
+              const updated = await api.updateDevice(device.ID, value);
+              setSaveFeedback({ ok: true, message: "Device details saved." });
+              onSaved({ ...device, ...updated });
+            } else {
+              await api.createDevice(value);
+              onSaved();
+            }
+          } catch (error) {
+            setSaveFeedback({ ok: false, message: error instanceof Error ? error.message : "Device details could not be saved." });
           } finally {
             setBusy(false);
           }
@@ -2142,11 +2163,34 @@ function DeviceModal({
           </div>
         )}
         <button className="primary" disabled={busy}>
-          {device ? "Save device" : "Add device"}
+          {busy ? "Saving…" : device ? "Save changes" : "Add device"}
         </button>
+        {saveFeedback && (
+          <div className={`inlineFeedback compact deviceSaveFeedback ${saveFeedback.ok ? "success" : "failure"}`} role="status">
+            <b>{saveFeedback.ok ? "Saved" : "Could not save"}</b>
+            <span>{saveFeedback.message}</span>
+          </div>
+        )}
       </form>
-    </Modal>
   );
+  if (device) {
+    return (
+      <section className="content deviceDetailPage">
+        <button className="backLink" type="button" onClick={onClose}><ArrowLeft /> Back to devices</button>
+        <div className="deviceDetailHeading">
+          <div className="deviceHeroIcon"><Server /></div>
+          <div>
+            <span className="eyebrow">DEVICE WORKSPACE</span>
+            <h2>{device.Name}</h2>
+            <p>{device.Address} · {device.SiteName || "Unassigned site"}</p>
+          </div>
+          <Status value={device.Status} />
+        </div>
+        <div className="deviceWorkspace card">{editor}</div>
+      </section>
+    );
+  }
+  return <Modal title="Add a monitored device" onClose={onClose}>{editor}</Modal>;
 }
 function monitType(value: number) {
   return ({ 0: "filesystem", 1: "directory", 2: "file", 3: "process", 4: "host", 5: "system", 6: "fifo", 7: "program", 8: "network" } as Record<number, string>)[value] ?? `type ${value}`;
