@@ -86,6 +86,7 @@ func (a *API) Routes(m *http.ServeMux) {
 	m.HandleFunc("GET /api/v1/monit-services", a.monitServices)
 	m.HandleFunc("GET /api/v1/devices/{id}/monit-control", a.monitControl)
 	m.HandleFunc("PUT /api/v1/devices/{id}/monit-control", a.setMonitControl)
+	m.HandleFunc("POST /api/v1/devices/{id}/monit-control/test", a.testMonitControl)
 	m.HandleFunc("POST /api/v1/devices/{id}/monit-actions", a.runMonitAction)
 	m.HandleFunc("GET /api/v1/devices/{id}/monit-actions", a.monitActionHistory)
 	m.HandleFunc("GET /api/v1/checks", a.checks)

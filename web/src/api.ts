@@ -216,6 +216,10 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ URL, CredentialID }),
     }),
+  testMonitControl: (deviceId: string) =>
+    request<{ ok: boolean; message: string }>(`/devices/${deviceId}/monit-control/test`, {
+      method: "POST",
+    }),
   monitActions: (deviceId: string) =>
     request<MonitAction[]>(`/devices/${deviceId}/monit-actions`),
   runMonitAction: (deviceId: string, Service: string, Action: string) =>

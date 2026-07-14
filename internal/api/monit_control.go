@@ -29,6 +29,14 @@ func validateMonitURL(raw string) (string, error) {
 }
 
 func sendMonitAction(ctx context.Context, client *http.Client, endpoint, username, password, service, action string) error {
+	return sendMonitRequest(ctx, client, endpoint, username, password, "/_doaction", url.Values{"action": {action}, "service": {service}})
+}
+
+func sendMonitProbe(ctx context.Context, client *http.Client, endpoint, username, password string) error {
+	return sendMonitRequest(ctx, client, endpoint, username, password, "/_status", url.Values{})
+}
+
+func sendMonitRequest(ctx context.Context, client *http.Client, endpoint, username, password, path string, form url.Values) error {
 	base, err := validateMonitURL(endpoint)
 	if err != nil {
 		return err
@@ -38,8 +46,9 @@ func sendMonitAction(ctx context.Context, client *http.Client, endpoint, usernam
 		return err
 	}
 	token := hex.EncodeToString(tokenBytes)
-	form := url.Values{"action": {action}, "service": {service}, "format": {"text"}, "securitytoken": {token}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/_doaction", strings.NewReader(form.Encode()))
+	form.Set("format", "text")
+	form.Set("securitytoken", token)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+path, strings.NewReader(form.Encode()))
 	if err != nil {
 		return err
 	}
@@ -60,6 +69,19 @@ func sendMonitAction(ctx context.Context, client *http.Client, endpoint, usernam
 		return fmt.Errorf("Monit returned %s: %s", response.Status, message)
 	}
 	return nil
+}
+
+func (a *API) configuredMonitClient(ctx context.Context, deviceID string) (store.MonitControl, store.Credential, *http.Client, error) {
+	control, err := a.s.MonitControl(ctx, deviceID)
+	if err != nil {
+		return control, store.Credential{}, nil, fmt.Errorf("configure Monit remote control for this device first")
+	}
+	credential, err := a.s.CredentialSecret(ctx, control.CredentialID)
+	if err != nil || credential.Kind != "monit" {
+		return control, credential, nil, fmt.Errorf("Monit credential is unavailable")
+	}
+	client := &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	return control, credential, client, nil
 }
 
 func (a *API) authorizeMonitDevice(r *http.Request, deviceID string) (store.User, bool) {
@@ -118,6 +140,26 @@ func (a *API) setMonitControl(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, 200, v)
 }
 
+func (a *API) testMonitControl(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.PathValue("id")
+	if _, ok := a.authorizeMonitDevice(r, deviceID); !ok {
+		problem(w, 403, errText("manager access to this device is required"))
+		return
+	}
+	control, credential, client, err := a.configuredMonitClient(r.Context(), deviceID)
+	if err != nil {
+		problem(w, 400, err)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+	if err = sendMonitProbe(ctx, client, control.URL, credential.Secret["username"], credential.Secret["password"]); err != nil {
+		problem(w, 502, err)
+		return
+	}
+	jsonOut(w, 200, map[string]any{"ok": true, "message": "Connected and authenticated to Monit successfully"})
+}
+
 func (a *API) runMonitAction(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.PathValue("id")
 	u, ok := a.authorizeMonitDevice(r, deviceID)
@@ -144,19 +186,13 @@ func (a *API) runMonitAction(w http.ResponseWriter, r *http.Request) {
 		problem(w, 404, errText("reported Monit service not found"))
 		return
 	}
-	control, err := a.s.MonitControl(r.Context(), deviceID)
+	control, credential, client, err := a.configuredMonitClient(r.Context(), deviceID)
 	if err != nil {
-		problem(w, 400, errText("configure Monit remote control for this device first"))
-		return
-	}
-	credential, err := a.s.CredentialSecret(r.Context(), control.CredentialID)
-	if err != nil || credential.Kind != "monit" {
-		problem(w, 400, errText("Monit credential is unavailable"))
+		problem(w, 400, err)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
-	client := &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 	err = sendMonitAction(ctx, client, control.URL, credential.Secret["username"], credential.Secret["password"], body.Service, body.Action)
 	result := store.MonitAction{DeviceID: deviceID, Service: body.Service, Action: body.Action, Success: err == nil, Message: "Command accepted by Monit"}
 	if err != nil {
