@@ -804,7 +804,8 @@ function Remediation({ devices, user }: { devices: Device[]; user: User }) {
             className="settingsForm"
             onSubmit={async (e) => {
               e.preventDefault();
-              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              const f = new FormData(form);
               await api.createActionTemplate({
                 name: String(f.get("name")),
                 executable: String(f.get("executable")),
@@ -815,7 +816,7 @@ function Remediation({ devices, user }: { devices: Device[]; user: User }) {
                 timeoutSeconds: Number(f.get("timeout")),
                 autoCheckType: String(f.get("autoCheckType")),
               });
-              e.currentTarget.reset();
+              form.reset();
               refresh();
             }}
           >
@@ -979,7 +980,8 @@ function Configuration({
             className="settingsForm"
             onSubmit={async (e) => {
               e.preventDefault();
-              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              const f = new FormData(form);
               const credential = await api.createCredential({
                 name: `${f.get("deviceId")} SSH`,
                 kind: "ssh",
@@ -996,7 +998,7 @@ function Configuration({
                 command: String(f.get("command")),
                 intervalSeconds: 86400,
               });
-              e.currentTarget.reset();
+              form.reset();
               refresh();
             }}
           >
@@ -1284,6 +1286,8 @@ function IdentitySettings({ current }: { current: User }) {
   const [role, setRole] = useState("viewer");
   const [credentialFeedback, setCredentialFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const [credentialBusy, setCredentialBusy] = useState(false);
+  const [credentialDeleteBusy, setCredentialDeleteBusy] = useState("");
+  const [credentialDeleteFeedback, setCredentialDeleteFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const refresh = useCallback(async () => {
     setTokens(await api.tokens());
     setCredentials(await api.credentials());
@@ -1429,10 +1433,11 @@ function IdentitySettings({ current }: { current: User }) {
           className="settingsForm"
           onSubmit={async (e) => {
             e.preventDefault();
-            const field = new FormData(e.currentTarget).get("name") as string;
+            const form = e.currentTarget;
+            const field = new FormData(form).get("name") as string;
             const token = await api.createToken(field);
             setCreatedToken(token.token ?? "");
-            e.currentTarget.reset();
+            form.reset();
             refresh();
           }}
         >
@@ -1444,6 +1449,12 @@ function IdentitySettings({ current }: { current: User }) {
       {(current.role === "administrator" || current.role === "manager") && (
         <div className="card panel">
           <Title text="Network credentials" />
+          {credentialDeleteFeedback && (
+            <div className={`inlineFeedback ${credentialDeleteFeedback.ok ? "success" : "failure"}`} role="status">
+              <b>{credentialDeleteFeedback.ok ? "Deleted" : "Could not delete"}</b>
+              <span>{credentialDeleteFeedback.message}</span>
+            </div>
+          )}
           <div className="rows">
             {credentials
               .filter((c) => c.kind === "snmp" || c.kind === "routeros" || c.kind === "monit")
@@ -1455,12 +1466,23 @@ function IdentitySettings({ current }: { current: User }) {
                   </div>
                   <button
                     className="secondary"
+                    disabled={!!credentialDeleteBusy}
                     onClick={async () => {
-                      await api.deleteCredential(c.id);
-                      refresh();
+                      if (!window.confirm(`Delete credential “${c.name}”?${c.kind === "monit" ? " This will disable Monit remote control on devices using it." : ""}`)) return;
+                      setCredentialDeleteBusy(c.id);
+                      setCredentialDeleteFeedback(null);
+                      try {
+                        await api.deleteCredential(c.id);
+                        await refresh();
+                        setCredentialDeleteFeedback({ ok: true, message: `Credential “${c.name}” was deleted.${c.kind === "monit" ? " Linked Monit remote-control settings were disabled." : ""}` });
+                      } catch (error) {
+                        setCredentialDeleteFeedback({ ok: false, message: error instanceof Error ? error.message : "The credential is still in use." });
+                      } finally {
+                        setCredentialDeleteBusy("");
+                      }
                     }}
                   >
-                    Delete
+                    {credentialDeleteBusy === c.id ? "Deleting…" : "Delete"}
                   </button>
                 </div>
               ))}
@@ -1469,7 +1491,8 @@ function IdentitySettings({ current }: { current: User }) {
             className="settingsForm"
             onSubmit={async (e) => {
               e.preventDefault();
-              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              const f = new FormData(form);
               const version = String(f.get("version"));
               const secret: Record<string, string> = { version };
               if (version === "2c")
@@ -1484,7 +1507,7 @@ function IdentitySettings({ current }: { current: User }) {
                 kind: "snmp",
                 secret,
               });
-              e.currentTarget.reset();
+              form.reset();
               refresh();
             }}
           >
@@ -1512,7 +1535,8 @@ function IdentitySettings({ current }: { current: User }) {
             className="settingsForm"
             onSubmit={async (e) => {
               e.preventDefault();
-              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              const f = new FormData(form);
               await api.createCredential({
                 name: String(f.get("name")),
                 kind: "routeros",
@@ -1524,7 +1548,7 @@ function IdentitySettings({ current }: { current: User }) {
                   caCertificate: String(f.get("caCertificate")),
                 },
               });
-              e.currentTarget.reset();
+              form.reset();
               refresh();
             }}
           >
@@ -1555,7 +1579,8 @@ function IdentitySettings({ current }: { current: User }) {
             className="settingsForm"
             onSubmit={async (e) => {
               e.preventDefault();
-              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              const f = new FormData(form);
               const credentialName = String(f.get("name"));
               setCredentialFeedback(null);
               setCredentialBusy(true);
@@ -1568,7 +1593,7 @@ function IdentitySettings({ current }: { current: User }) {
                     password: String(f.get("password")),
                   },
                 });
-                e.currentTarget.reset();
+                form.reset();
                 await refresh();
                 setCredentialFeedback({ ok: true, message: `Monit credential “${credentialName}” is encrypted and ready to use.` });
               } catch (error) {
@@ -1613,7 +1638,8 @@ function IdentitySettings({ current }: { current: User }) {
             className="settingsForm"
             onSubmit={async (e) => {
               e.preventDefault();
-              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              const f = new FormData(form);
               const lat = String(f.get("latitude"));
               const lon = String(f.get("longitude"));
               await api.createSite({
@@ -1621,7 +1647,7 @@ function IdentitySettings({ current }: { current: User }) {
                 latitude: lat ? Number(lat) : null,
                 longitude: lon ? Number(lon) : null,
               });
-              e.currentTarget.reset();
+              form.reset();
               refresh();
             }}
           >
@@ -1741,9 +1767,9 @@ function IdentitySettings({ current }: { current: User }) {
             ))}
           </div>
           <form className="settingsForm" onSubmit={async (e) => {
-            e.preventDefault(); const f = new FormData(e.currentTarget);
+            e.preventDefault(); const form = e.currentTarget; const f = new FormData(form);
             await api.createMaintenanceWindow({ Name: String(f.get("name")), SiteID: String(f.get("siteId")), DeviceID: "", StartsAt: new Date(String(f.get("startsAt"))).toISOString(), EndsAt: new Date(String(f.get("endsAt"))).toISOString() });
-            e.currentTarget.reset(); refresh();
+            form.reset(); refresh();
           }}>
             <h3>Schedule site maintenance</h3>
             <input required name="name" placeholder="Core switch upgrade" />
@@ -1782,7 +1808,8 @@ function IdentitySettings({ current }: { current: User }) {
             className="settingsForm"
             onSubmit={async (e) => {
               e.preventDefault();
-              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              const f = new FormData(form);
               const name = String(f.get("name"));
               const kind = channelKind;
               const secret: Record<string, string> =
@@ -1802,7 +1829,7 @@ function IdentitySettings({ current }: { current: User }) {
                 secret,
               });
               await api.createChannel({ name, kind, credentialId: cred.id, siteId: String(f.get("siteId")), notifyOpened: f.has("notifyOpened"), notifyResolved: f.has("notifyResolved"), repeatMinutes: Number(f.get("repeatMinutes") || 0) });
-              e.currentTarget.reset();
+              form.reset();
               refresh();
             }}
           >

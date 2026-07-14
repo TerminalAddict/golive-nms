@@ -4,7 +4,7 @@ ALTER TABLE credentials ADD CONSTRAINT credentials_kind_check CHECK(kind IN ('sn
 CREATE TABLE IF NOT EXISTS monit_controls (
  device_id uuid PRIMARY KEY REFERENCES devices(id) ON DELETE CASCADE,
  url text NOT NULL,
- credential_id uuid NOT NULL REFERENCES credentials(id) ON DELETE RESTRICT,
+ credential_id uuid NOT NULL REFERENCES credentials(id) ON DELETE CASCADE,
  updated_at timestamptz NOT NULL DEFAULT now()
 );
 

@@ -497,6 +497,8 @@ Configure GoLive:
 
 The `set mmonit .../collector` credentials remain separate from the port-2812 credentials. `register without credentials` is fine for reporting; it does not supply credentials for remote commands.
 
+Deleting a Monit credential from **Settings → Network credentials** also disables remote control on devices that used it. Monitoring reports continue normally; select a new credential in each affected device to restore remote commands.
+
 ## 11. Complete firewall communication matrix
 
 “Source → destination” describes the initiating connection.
