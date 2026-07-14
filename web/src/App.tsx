@@ -30,7 +30,7 @@ import type {
   RemediationJob,
   User,
 } from "./api";
-import type { Check, Device, Incident, Summary } from "./types";
+import type { Check, Device, Incident, MonitService, Summary } from "./types";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 
 type View =
@@ -138,22 +138,26 @@ function Console({ user }: { user: User }) {
   const [summary, setSummary] = useState(emptySummary);
   const [devices, setDevices] = useState<Device[]>([]);
   const [checks, setChecks] = useState<Check[]>([]);
+  const [monitServices, setMonitServices] = useState<MonitService[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [deviceEvents, setDeviceEvents] = useState<DeviceEvent[]>([]);
   const [modal, setModal] = useState<"device" | "check" | null>(null);
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
     try {
-      const [s, d, c, i, ev] = await Promise.all([
+      const [s, d, c, ms, i, ev] = await Promise.all([
         api.summary(),
         api.devices(),
         api.checks(),
+        api.monitServices(),
         api.incidents(),
         api.deviceEvents(),
       ]);
       setSummary(s);
       setDevices(d);
       setChecks(c);
+      setMonitServices(ms);
       setIncidents(i);
       setDeviceEvents(ev);
       setError("");
@@ -270,7 +274,10 @@ function Console({ user }: { user: User }) {
           <Devices
             devices={devices}
             checks={checks}
+            monitServices={monitServices}
+            canManage={user.role === "administrator" || user.role === "manager" || user.role === "site_manager"}
             onAddCheck={() => setModal("check")}
+            onEdit={setEditingDevice}
           />
         )}{" "}
         {view === "incidents" && (
@@ -299,9 +306,23 @@ function Console({ user }: { user: User }) {
       </main>
       {modal === "device" && (
         <DeviceModal
+          devices={devices}
+          monitServices={monitServices}
           onClose={() => setModal(null)}
           onSaved={() => {
             setModal(null);
+            load();
+          }}
+        />
+      )}
+      {editingDevice && (
+        <DeviceModal
+          device={editingDevice}
+          devices={devices}
+          monitServices={monitServices}
+          onClose={() => setEditingDevice(null)}
+          onSaved={() => {
+            setEditingDevice(null);
             load();
           }}
         />
@@ -627,11 +648,17 @@ function Empty({ text }: { text: string }) {
 function Devices({
   devices,
   checks,
+  monitServices,
+  canManage,
   onAddCheck,
+  onEdit,
 }: {
   devices: Device[];
   checks: Check[];
+  monitServices: MonitService[];
+  canManage: boolean;
   onAddCheck: () => void;
+  onEdit: (device: Device) => void;
 }) {
   return (
     <section className="content">
@@ -651,11 +678,18 @@ function Devices({
         {devices.map((d) => (
           <div className="trow" key={d.ID}>
             <div>
-              <b>{d.Name}</b>
+              {canManage ? (
+                <button className="deviceLink" onClick={() => onEdit(d)}>{d.Name}</button>
+              ) : (
+                <b>{d.Name}</b>
+              )}
               <small>{d.Address}</small>
             </div>
             <span>{d.Kind}</span>
-            <span>{checks.filter((c) => c.DeviceID === d.ID).length}</span>
+            <span className="serviceCount">
+              {checks.filter((c) => c.DeviceID === d.ID).length} checks
+              <small>{monitServices.filter((s) => s.DeviceID === d.ID).length} Monit</small>
+            </span>
             <Status value={d.Status} />
           </div>
         ))}
@@ -1810,38 +1844,50 @@ function Modal({
   );
 }
 function DeviceModal({
+  device,
+  devices,
+  monitServices,
   onClose,
   onSaved,
 }: {
+  device?: Device;
+  devices: Device[];
+  monitServices: MonitService[];
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [kind, setKind] = useState("server");
+  const [name, setName] = useState(device?.Name ?? "");
+  const [address, setAddress] = useState(device?.Address ?? "");
+  const [kind, setKind] = useState(device?.Kind ?? "server");
   const [sites, setSites] = useState<Site[]>([]);
-  const [site, setSite] = useState("");
+  const [site, setSite] = useState(device?.SiteID ?? "");
+  const [parent, setParent] = useState(device?.ParentID ?? "");
+  const [tags, setTags] = useState((device?.Tags ?? []).join(", "));
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     api.sites().then((v) => {
       setSites(v);
-      if (v.length) setSite(v[0].id);
+      if (v.length && !device?.SiteID) setSite(v[0].id);
     });
-  }, []);
+  }, [device?.SiteID]);
+  const reported = device ? monitServices.filter((s) => s.DeviceID === device.ID) : [];
   return (
-    <Modal title="Add a monitored device" onClose={onClose}>
+    <Modal title={device ? `Manage ${device.Name}` : "Add a monitored device"} onClose={onClose}>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
           try {
-            await api.createDevice({
+            const value = {
               Name: name,
               Address: address,
               Kind: kind,
               SiteID: site,
-              Tags: [],
-            });
+              ParentID: parent,
+              Tags: tags.split(",").map((v) => v.trim()).filter(Boolean),
+            };
+            if (device) await api.updateDevice(device.ID, value);
+            else await api.createDevice(value);
             onSaved();
           } finally {
             setBusy(false);
@@ -1871,12 +1917,21 @@ function DeviceModal({
           <select
             required
             value={site}
-            onChange={(e) => setSite(e.target.value)}
+            onChange={(e) => { setSite(e.target.value); setParent(""); }}
           >
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Parent device
+          <select value={parent} onChange={(e) => setParent(e.target.value)}>
+            <option value="">No parent</option>
+            {devices.filter((d) => d.ID !== device?.ID && d.SiteID === site).map((d) => (
+              <option key={d.ID} value={d.ID}>{d.Name}</option>
             ))}
           </select>
         </label>
@@ -1889,12 +1944,34 @@ function DeviceModal({
             <option>other</option>
           </select>
         </label>
+        <label>
+          Tags
+          <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="production, mail, customer-a" />
+        </label>
+        {device && (
+          <div className="monitList">
+            <div><b>Monit services</b><small>{reported.length} reported</small></div>
+            {reported.map((service) => (
+              <div className="monitService" key={service.Name}>
+                <span>
+                  <b>{service.Name}</b>
+                  <small>{monitType(service.Type)} · {service.Monitor ? "monitored" : "not monitored"}</small>
+                </span>
+                <Status value={service.Monitor === 0 ? "unknown" : service.Status === 0 ? "up" : "down"} />
+              </div>
+            ))}
+            {!reported.length && <small>No Monit services have been reported yet.</small>}
+          </div>
+        )}
         <button className="primary" disabled={busy}>
-          Add device
+          {device ? "Save device" : "Add device"}
         </button>
       </form>
     </Modal>
   );
+}
+function monitType(value: number) {
+  return ({ 0: "filesystem", 1: "directory", 2: "file", 3: "process", 4: "host", 5: "system", 6: "fifo", 7: "program", 8: "network" } as Record<number, string>)[value] ?? `type ${value}`;
 }
 function CheckModal({
   devices,

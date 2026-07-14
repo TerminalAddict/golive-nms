@@ -41,6 +41,15 @@ func filterChecks(v []store.Check, s siteScope) []store.Check {
 	}
 	return out
 }
+func filterMonitServices(v []store.MonitServiceStatus, s siteScope) []store.MonitServiceStatus {
+	out := v[:0]
+	for _, x := range v {
+		if s.can(x.SiteID) {
+			out = append(out, x)
+		}
+	}
+	return out
+}
 func filterIncidents(v []store.Incident, s siteScope) []store.Incident {
 	out := v[:0]
 	for _, x := range v {

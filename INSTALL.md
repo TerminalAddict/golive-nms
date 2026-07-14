@@ -460,6 +460,9 @@ sudo monit status
 ```
 
 Use the username and password configured by `GOLIVE_MONIT_USERNAME` and `GOLIVE_MONIT_PASSWORD`.
+The first valid report creates the host automatically. In **Devices**, select
+the host name to edit its address, site, parent relationship, type, and tags and
+to inspect every service reported by Monit.
 
 ## 11. Complete firewall communication matrix
 

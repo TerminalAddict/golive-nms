@@ -54,6 +54,15 @@ func (s *Store) RecordMonit(ctx context.Context, r MonitReport) (string, error) 
 			return "", err
 		}
 	}
+	if len(r.Services) > 0 {
+		names := make([]string, 0, len(r.Services))
+		for _, v := range r.Services {
+			names = append(names, v.Name)
+		}
+		if _, err = tx.Exec(ctx, `DELETE FROM monit_services WHERE host_id=$1 AND NOT (name=ANY($2))`, hostID, names); err != nil {
+			return "", err
+		}
+	}
 	_, err = tx.Exec(ctx, `UPDATE devices SET status=CASE WHEN EXISTS(SELECT 1 FROM monit_services WHERE host_id=$2 AND status<>0 AND monitor<>0) THEN 'down' ELSE 'up' END,last_seen_at=now(),updated_at=now() WHERE id=$1`, deviceID, hostID)
 	if err != nil {
 		return "", err
@@ -75,4 +84,21 @@ func (s *Store) RecordMonit(ctx context.Context, r MonitReport) (string, error) 
 		}
 	}
 	return deviceID, tx.Commit(ctx)
+}
+
+func (s *Store) MonitServices(ctx context.Context) ([]MonitServiceStatus, error) {
+	rows, err := s.Pool.Query(ctx, `SELECT d.id,d.name,coalesce(d.site_id::text,''),h.monit_id,h.version,h.last_report_at,m.name,m.type,m.status,m.monitor,m.collected_at,m.updated_at FROM monit_services m JOIN monit_hosts h ON h.id=m.host_id JOIN devices d ON d.id=h.device_id ORDER BY d.name,m.name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []MonitServiceStatus{}
+	for rows.Next() {
+		var v MonitServiceStatus
+		if err = rows.Scan(&v.DeviceID, &v.DeviceName, &v.SiteID, &v.MonitID, &v.Version, &v.LastReportAt, &v.Name, &v.Type, &v.Status, &v.Monitor, &v.CollectedAt, &v.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
 }

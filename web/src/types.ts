@@ -19,6 +19,20 @@ export interface Device {
   Tags: string[];
   LastSeenAt: string | null;
 }
+export interface MonitService {
+  DeviceID: string;
+  DeviceName: string;
+  SiteID: string;
+  MonitID: string;
+  Version: string;
+  Name: string;
+  Type: number;
+  Status: number;
+  Monitor: number;
+  CollectedAt: string | null;
+  UpdatedAt: string | null;
+  LastReportAt: string;
+}
 export interface Check {
   ID: string;
   DeviceID: string;

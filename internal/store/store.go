@@ -25,6 +25,13 @@ type Device struct {
 	Tags                                                        []string
 	LastSeenAt                                                  *time.Time
 }
+type MonitServiceStatus struct {
+	DeviceID, DeviceName, SiteID, MonitID, Version, Name string
+	Type, Monitor                                        int
+	Status                                               int64
+	CollectedAt, UpdatedAt                               *time.Time
+	LastReportAt                                         time.Time
+}
 type Check struct {
 	ID, DeviceID, DeviceName, Name, Type, Target, Status, LastError string
 	SiteID                                                          string
@@ -137,6 +144,55 @@ func (s *Store) CreateDevice(ctx context.Context, d Device) (Device, error) {
 	}
 	err := s.Pool.QueryRow(ctx, `INSERT INTO devices(site_id,parent_id,name,address,kind,tags) VALUES(coalesce(NULLIF($1,'')::uuid,(SELECT id FROM sites ORDER BY created_at LIMIT 1)),NULLIF($2,'')::uuid,$3,$4,$5,$6) RETURNING id,status,site_id::text`, d.SiteID, d.ParentID, d.Name, d.Address, d.Kind, d.Tags).Scan(&d.ID, &d.Status, &d.SiteID)
 	return d, err
+}
+
+func (s *Store) UpdateDevice(ctx context.Context, d Device) (Device, error) {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return d, err
+	}
+	defer tx.Rollback(ctx)
+	var crossSiteChildren bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM devices WHERE parent_id=$1 AND site_id IS DISTINCT FROM $2::uuid)`, d.ID, d.SiteID).Scan(&crossSiteChildren); err != nil {
+		return d, err
+	}
+	if crossSiteChildren {
+		return d, errors.New("move or detach child devices before changing this device's site")
+	}
+	if d.ParentID != "" {
+		if d.ParentID == d.ID {
+			return d, errors.New("a device cannot be its own parent")
+		}
+		var parentSite string
+		if err = tx.QueryRow(ctx, `SELECT coalesce(site_id::text,'') FROM devices WHERE id=$1`, d.ParentID).Scan(&parentSite); err != nil {
+			return d, errors.New("parent device not found")
+		}
+		if parentSite != d.SiteID {
+			return d, errors.New("parent device must belong to the same site")
+		}
+		var cycle bool
+		err = tx.QueryRow(ctx, `WITH RECURSIVE ancestors AS (SELECT id,parent_id FROM devices WHERE id=$1 UNION ALL SELECT d.id,d.parent_id FROM devices d JOIN ancestors a ON d.id=a.parent_id) SELECT EXISTS(SELECT 1 FROM ancestors WHERE id=$2)`, d.ParentID, d.ID).Scan(&cycle)
+		if err != nil {
+			return d, err
+		}
+		if cycle {
+			return d, errors.New("parent relationship would create a cycle")
+		}
+	}
+	if d.Tags == nil {
+		d.Tags = []string{}
+	}
+	err = tx.QueryRow(ctx, `UPDATE devices SET site_id=$2,parent_id=NULLIF($3,'')::uuid,name=$4,address=$5,kind=$6,tags=$7,updated_at=now() WHERE id=$1 RETURNING status,last_seen_at`, d.ID, d.SiteID, d.ParentID, d.Name, d.Address, d.Kind, d.Tags).Scan(&d.Status, &d.LastSeenAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return d, errors.New("device not found")
+		}
+		return d, err
+	}
+	if err = tx.QueryRow(ctx, `SELECT coalesce(name,'') FROM sites WHERE id=$1`, d.SiteID).Scan(&d.SiteName); err != nil {
+		return d, errors.New("site not found")
+	}
+	return d, tx.Commit(ctx)
 }
 
 func (s *Store) DeleteDevice(ctx context.Context, id string) error {

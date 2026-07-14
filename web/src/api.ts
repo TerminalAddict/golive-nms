@@ -1,4 +1,4 @@
-import type { Check, Device, Incident, Summary } from "./types";
+import type { Check, Device, Incident, MonitService, Summary } from "./types";
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api/v1${path}`, {
     ...init,
@@ -191,6 +191,7 @@ export const api = {
     request<void>(`/notification-channels/${id}`, { method: "DELETE" }),
   summary: () => request<Summary>("/summary"),
   devices: () => request<Device[]>("/devices"),
+  monitServices: () => request<MonitService[]>("/monit-services"),
   checks: () => request<Check[]>("/checks"),
   history: (id: string) => request<CheckSample[]>(`/checks/${id}/history`),
   incidents: () => request<Incident[]>("/incidents"),
@@ -244,6 +245,11 @@ export const api = {
   createDevice: (value: Partial<Device>) =>
     request<Device>("/devices", {
       method: "POST",
+      body: JSON.stringify(value),
+    }),
+  updateDevice: (id: string, value: Partial<Device>) =>
+    request<Device>(`/devices/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(value),
     }),
   sites: () => request<Site[]>("/sites"),

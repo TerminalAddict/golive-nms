@@ -81,7 +81,9 @@ func (a *API) Routes(m *http.ServeMux) {
 	m.HandleFunc("GET /api/v1/summary", a.summary)
 	m.HandleFunc("GET /api/v1/devices", a.devices)
 	m.HandleFunc("POST /api/v1/devices", a.createDevice)
+	m.HandleFunc("PATCH /api/v1/devices/{id}", a.updateDevice)
 	m.HandleFunc("DELETE /api/v1/devices/{id}", a.deleteDevice)
+	m.HandleFunc("GET /api/v1/monit-services", a.monitServices)
 	m.HandleFunc("GET /api/v1/checks", a.checks)
 	m.HandleFunc("POST /api/v1/checks", a.createCheck)
 	m.HandleFunc("GET /api/v1/checks/{id}/history", a.checkHistory)
@@ -243,6 +245,68 @@ func (a *API) createDevice(w http.ResponseWriter, r *http.Request) {
 	a.events.Publish("device.created", v)
 	a.audit(r, "create", "device", v.ID)
 	jsonOut(w, 201, v)
+}
+func (a *API) updateDevice(w http.ResponseWriter, r *http.Request) {
+	u, _ := CurrentUser(r.Context())
+	if u.Role != "administrator" && u.Role != "manager" && u.Role != "site_manager" {
+		problem(w, 403, errText("manager role required"))
+		return
+	}
+	id := r.PathValue("id")
+	currentSite, e := a.s.DeviceSite(r.Context(), id)
+	if e != nil {
+		problem(w, 404, errText("device not found"))
+		return
+	}
+	var v store.Device
+	if !decode(w, r, &v) {
+		return
+	}
+	v.ID = id
+	v.Name = strings.TrimSpace(v.Name)
+	v.Address = strings.TrimSpace(v.Address)
+	if v.SiteID == "" {
+		v.SiteID = currentSite
+	}
+	if v.Name == "" || v.Address == "" {
+		problem(w, 400, errText("name and address are required"))
+		return
+	}
+	validKinds := map[string]bool{"server": true, "router": true, "switch": true, "other": true}
+	if !validKinds[v.Kind] {
+		problem(w, 400, errText("unsupported device type"))
+		return
+	}
+	scope, e := a.scope(r)
+	if e != nil {
+		problem(w, 500, e)
+		return
+	}
+	if !scope.can(currentSite) || !scope.can(v.SiteID) {
+		problem(w, 403, errText("site access denied"))
+		return
+	}
+	v, e = a.s.UpdateDevice(r.Context(), v)
+	if e != nil {
+		problem(w, 400, e)
+		return
+	}
+	a.events.Publish("device.updated", v)
+	a.audit(r, "update", "device", v.ID)
+	jsonOut(w, 200, v)
+}
+func (a *API) monitServices(w http.ResponseWriter, r *http.Request) {
+	v, e := a.s.MonitServices(r.Context())
+	if e != nil {
+		problem(w, 500, e)
+		return
+	}
+	scope, e := a.scope(r)
+	if e != nil {
+		problem(w, 500, e)
+		return
+	}
+	jsonOut(w, 200, filterMonitServices(v, scope))
 }
 func (a *API) deleteDevice(w http.ResponseWriter, r *http.Request) {
 	site, e := a.s.DeviceSite(r.Context(), r.PathValue("id"))

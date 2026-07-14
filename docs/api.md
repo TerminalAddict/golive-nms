@@ -17,6 +17,7 @@ All management resources are below `/api/v1`. JSON errors have the form `{"error
 | `GET` | `/api/v1/events` | Server-sent event stream |
 | `POST` | `/api/v1/agent/report` | Authenticated agent report ingestion |
 | `POST` | `/collector` | Monit-compatible XML collector |
+| `GET` | `/api/v1/monit-services` | Site-scoped Monit service inventory and status |
 | `GET`, `POST` | `/api/v1/users` | Administrator user management |
 | `GET`, `POST` | `/api/v1/api-tokens` | Service-token management |
 | `GET`, `POST` | `/api/v1/credentials` | Encrypted credentials |
@@ -27,6 +28,7 @@ All management resources are below `/api/v1`. JSON errors have the form `{"error
 | `POST` | `/api/v1/enroll` | Submit CSR and receive client/CA certificates |
 | `GET`, `DELETE` | `/api/v1/identities/{id}` | List or revoke mTLS identities |
 | `GET`, `POST` | `/api/v1/collector/*` | Remote collector assignments and results |
+| `PATCH` | `/api/v1/devices/{id}` | Update device metadata, site, tags, and parent |
 | `GET` | `/api/v1/device-events` | Search syslog and SNMP traps |
 | `GET`, `POST` | `/api/v1/config-profiles` | SSH configuration backup profiles |
 | `GET` | `/api/v1/config-diff` | Authorized unified configuration diff |
