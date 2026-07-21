@@ -13,4 +13,8 @@ import './configuration.css'
 import './sso.css'
 import './roles.css'
 import './remediation.css'
+import './theme.css'
+const initialTheme = localStorage.getItem('golive-theme') === 'light' ? 'light' : 'dark'
+document.documentElement.dataset.theme = initialTheme
+document.documentElement.style.colorScheme = initialTheme
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)

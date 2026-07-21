@@ -15,6 +15,8 @@ import {
   FileDiff,
   ShieldCheck,
   ArrowLeft,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { api } from "./api";
 import type {
@@ -44,6 +46,7 @@ type View =
   | "remediation"
   | "topology"
   | "settings";
+type Theme = "dark" | "light";
 const emptySummary: Summary = {
   Total: 0,
   Up: 0,
@@ -56,6 +59,14 @@ const emptySummary: Summary = {
 export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
+  const [theme, setTheme] = useState<Theme>(() => localStorage.getItem("golive-theme") === "light" ? "light" : "dark");
+  const toggleTheme = () => setTheme((value) => value === "dark" ? "light" : "dark");
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem("golive-theme", theme);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#07130f" : "#f4f8f5");
+  }, [theme]);
   useEffect(() => {
     api
       .me()
@@ -68,12 +79,22 @@ export function App() {
       <div className="login">
         <Brand />
         <p>Loading network operations…</p>
+        <ThemeToggle theme={theme} onToggle={toggleTheme} floating />
       </div>
     );
-  if (!user) return <Login onLogin={setUser} />;
-  return <Console user={user} />;
+  if (!user) return <Login onLogin={setUser} theme={theme} onToggleTheme={toggleTheme} />;
+  return <Console user={user} theme={theme} onToggleTheme={toggleTheme} />;
 }
-function Login({ onLogin }: { onLogin: (u: User) => void }) {
+function ThemeToggle({ theme, onToggle, floating = false }: { theme: Theme; onToggle: () => void; floating?: boolean }) {
+  const next = theme === "dark" ? "light" : "dark";
+  return (
+    <button className={`themeToggle${floating ? " floating" : ""}`} type="button" onClick={onToggle} aria-label={`Switch to ${next} mode`} title={`Switch to ${next} mode`}>
+      {theme === "dark" ? <Sun /> : <Moon />}
+      <span>{next === "light" ? "Light" : "Dark"}</span>
+    </button>
+  );
+}
+function Login({ onLogin, theme, onToggleTheme }: { onLogin: (u: User) => void; theme: Theme; onToggleTheme: () => void }) {
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -83,6 +104,7 @@ function Login({ onLogin }: { onLogin: (u: User) => void }) {
   }, []);
   return (
     <div className="login">
+      <ThemeToggle theme={theme} onToggle={onToggleTheme} floating />
       <div className="loginCard card">
         <Brand />
         <h1>Welcome back</h1>
@@ -135,7 +157,7 @@ function Login({ onLogin }: { onLogin: (u: User) => void }) {
     </div>
   );
 }
-function Console({ user }: { user: User }) {
+function Console({ user, theme, onToggleTheme }: { user: User; theme: Theme; onToggleTheme: () => void }) {
   const [view, setView] = useState<View>("overview");
   const [summary, setSummary] = useState(emptySummary);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -258,6 +280,7 @@ function Console({ user }: { user: User }) {
           <div className="live">
             <i /> Live
           </div>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           {!editingDevice && (
             <button className="primary" onClick={() => setModal("device")}>
               <Plus /> Add device

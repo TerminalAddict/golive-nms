@@ -1,0 +1,168 @@
+:root[data-theme="light"] {
+  color-scheme: light;
+  color: #17342a;
+  background: #f4f8f5;
+  --panel: #ffffff;
+  --panel2: #f7faf8;
+  --line: #d8e4de;
+  --muted: #61776e;
+  --green: #087c50;
+  --green2: #08744b;
+  --red: #c93643;
+  --amber: #9a6500;
+}
+
+.themeToggle {
+  border: 1px solid #29483d;
+  border-radius: 9px;
+  background: #11261f;
+  color: #b9cec5;
+  min-height: 38px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+.themeToggle:hover { color: var(--green); border-color: var(--green); }
+.themeToggle svg { width: 16px; height: 16px; }
+.themeToggle.floating { position: fixed; top: 20px; right: 20px; z-index: 30; }
+
+:root[data-theme="light"] body {
+  background: radial-gradient(circle at 75% 0, #dcefe5 0, transparent 31%), #f4f8f5;
+}
+:root[data-theme="light"] .shell,
+:root[data-theme="light"] main { background: transparent; }
+:root[data-theme="light"] aside {
+  background: rgba(248, 252, 249, .94);
+  border-color: var(--line);
+  box-shadow: 8px 0 28px rgba(34, 75, 58, .05);
+}
+:root[data-theme="light"] header {
+  background: rgba(255, 255, 255, .84);
+  border-color: var(--line);
+  box-shadow: 0 5px 25px rgba(37, 73, 58, .05);
+}
+:root[data-theme="light"] .card {
+  background: linear-gradient(145deg, #ffffff, #f8fbf9);
+  border-color: var(--line);
+  box-shadow: 0 12px 32px rgba(38, 74, 59, .08);
+}
+:root[data-theme="light"] nav button,
+:root[data-theme="light"] .asideBottom button { color: #60766d; }
+:root[data-theme="light"] nav button:hover,
+:root[data-theme="light"] nav button.active { color: #155c40; background: #e5f1eb; }
+:root[data-theme="light"] nav em { background: #e4eee9; }
+:root[data-theme="light"] .user { border-color: var(--line); }
+:root[data-theme="light"] .user > span,
+:root[data-theme="light"] .stat .icon,
+:root[data-theme="light"] .deviceIcon,
+:root[data-theme="light"] .deviceHeroIcon { background: #e1f1e9; }
+:root[data-theme="light"] .danger { color: #a82d39 !important; background: #f9e4e7 !important; }
+:root[data-theme="light"] .secondary,
+:root[data-theme="light"] .themeToggle {
+  background: #edf4f0;
+  color: #315f4d;
+  border-color: #cfddd6 !important;
+}
+:root[data-theme="light"] .primary { color: #ffffff; box-shadow: 0 7px 18px rgba(10, 152, 98, .18); }
+:root[data-theme="light"] .hero:after { border-color: #d6e6de; }
+:root[data-theme="light"] .hero p,
+:root[data-theme="light"] .legend,
+:root[data-theme="light"] .live,
+:root[data-theme="light"] .backLink { color: var(--muted); }
+:root[data-theme="light"] .ring { box-shadow: 0 0 55px rgba(8, 124, 80, .10); }
+:root[data-theme="light"] .ring > div { background: #ffffff; }
+:root[data-theme="light"] .title,
+:root[data-theme="light"] .row,
+:root[data-theme="light"] .trow,
+:root[data-theme="light"] .settingsForm,
+:root[data-theme="light"] .inlineAction { border-color: var(--line); }
+:root[data-theme="light"] .thead { background: #edf4f0; }
+:root[data-theme="light"] .deviceRow:hover,
+:root[data-theme="light"] .deviceRow:focus-visible,
+:root[data-theme="light"] .configGrid .row.selected { background: #e7f3ed; }
+:root[data-theme="light"] .deviceLink { color: #17342a; }
+:root[data-theme="light"] .deviceIcon.alert { background: #fae7e9; }
+:root[data-theme="light"] .error,
+:root[data-theme="light"] .inlineFeedback.failure {
+  color: #9f2733;
+  border-color: #e8b9bf;
+  background: #fcebed;
+}
+:root[data-theme="light"] .inlineFeedback.success {
+  color: #096c47;
+  border-color: #add7c4;
+  background: #e8f5ee;
+}
+:root[data-theme="light"] .inlineFeedback span { color: #425f53; }
+:root[data-theme="light"] .overlay { background: rgba(31, 48, 41, .45); }
+:root[data-theme="light"] .modal { background: #ffffff; border-color: var(--line); box-shadow: 0 30px 75px rgba(35, 58, 48, .22); }
+:root[data-theme="light"] input:not([type="checkbox"]),
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] .modal input,
+:root[data-theme="light"] .modal select,
+:root[data-theme="light"] .deviceEditorForm input,
+:root[data-theme="light"] .deviceEditorForm select,
+:root[data-theme="light"] .eventFilters input,
+:root[data-theme="light"] .eventFilters select,
+:root[data-theme="light"] .inlineAction select,
+:root[data-theme="light"] .roleSelect,
+:root[data-theme="light"] .siteGrant select,
+:root[data-theme="light"] .performance .title select {
+  background: #ffffff;
+  color: #17342a;
+  border-color: #cbdad2;
+}
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder { color: #8da098; }
+:root[data-theme="light"] .monitList,
+:root[data-theme="light"] .monitControl,
+:root[data-theme="light"] .actionHistory,
+:root[data-theme="light"] .deviceEditorForm .monitList,
+:root[data-theme="light"] .deviceEditorForm .monitControl,
+:root[data-theme="light"] .deviceEditorForm .actionHistory {
+  background: #f7faf8;
+  border-color: #d2dfd8;
+}
+:root[data-theme="light"] .monitService,
+:root[data-theme="light"] .actionHistoryRow { border-color: var(--line); }
+:root[data-theme="light"] .miniAction { background: #edf4f0; color: #315f4d; border-color: #c8d9d0; }
+:root[data-theme="light"] .actionHistoryRow i.ok { background: #dff2e8; }
+:root[data-theme="light"] .actionHistoryRow i.failed { background: #fae5e8; }
+:root[data-theme="light"] .tokenReveal { background: #e8f4ee; border-color: #badaca; }
+:root[data-theme="light"] .tokenReveal code { color: #24493a; }
+:root[data-theme="light"] .configDiff,
+:root[data-theme="light"] .jobRows pre { background: #eef4f1; color: #36584b; }
+:root[data-theme="light"] .chartBody svg {
+  border-color: #cbdad2;
+  background-image: linear-gradient(#e3ece7 1px, transparent 1px);
+}
+:root[data-theme="light"] .topology { background-image: radial-gradient(#cbdad2 1px, transparent 1px); }
+:root[data-theme="light"] .node { background: #ffffff; border-color: #c7d8d0; box-shadow: 0 9px 23px rgba(43, 76, 62, .12); }
+:root[data-theme="light"] .node:before { border-color: #cbdad2; }
+:root[data-theme="light"] .topologyLinks line { stroke: #91aa9f; }
+:root[data-theme="light"] .mapTabs button { background: #ffffff; }
+:root[data-theme="light"] .mapTabs button.active { background: #e4f1ea; border-color: #9dc8b3; }
+:root[data-theme="light"] .geoMap .leaflet-container { background: #e8eeeb; }
+:root[data-theme="light"] .geoMap .leaflet-tile { filter: saturate(.8) brightness(.98); }
+:root[data-theme="light"] .leaflet-popup-content-wrapper,
+:root[data-theme="light"] .leaflet-popup-tip,
+:root[data-theme="light"] .leaflet-control-zoom a { background: #ffffff !important; color: #17342a !important; border-color: #cbdad2 !important; }
+:root[data-theme="light"] .login {
+  color: #17342a;
+  background: radial-gradient(circle at 50% 20%, #d9eee3 0, transparent 34%), #f4f8f5;
+}
+:root[data-theme="light"] .loginCard > p,
+:root[data-theme="light"] .login > p { color: var(--muted); }
+:root[data-theme="light"] .ssoButton { color: #244b3c; background: #edf4f0; border-color: #cadbd2; }
+
+@media(max-width:600px) {
+  .themeToggle span { display: none; }
+  .themeToggle { padding: 8px; }
+  .themeToggle.floating { top: 12px; right: 12px; }
+  :root[data-theme="light"] .mobile { color: #17342a; }
+}
