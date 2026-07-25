@@ -450,7 +450,7 @@ function Overview({
             <Radio /> SYSTEM STATUS
           </p>
           <h2>
-            {s.Down
+            {s.Down || s.Degraded || s.OpenIncidents
               ? "Attention required"
               : s.Total
                 ? "All systems operational"
@@ -458,7 +458,7 @@ function Overview({
           </h2>
           <p>
             {s.Total
-              ? `${s.Up} of ${s.Total} devices are responding normally.`
+              ? `${s.Up} of ${s.Total} devices are healthy.`
               : "Add your first device and service check to begin."}
           </p>
           <div className="legend">
@@ -469,6 +469,10 @@ function Overview({
             <span>
               <i className="down" />
               {s.Down} Down
+            </span>
+            <span>
+              <i className="unknown" />
+              {s.Degraded} Degraded
             </span>
             <span>
               <i className="unknown" />

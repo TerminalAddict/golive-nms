@@ -63,8 +63,10 @@ func (s *Store) RecordMonit(ctx context.Context, r MonitReport) (string, error) 
 			return "", err
 		}
 	}
-	_, err = tx.Exec(ctx, `UPDATE devices SET status=CASE WHEN EXISTS(SELECT 1 FROM monit_services WHERE host_id=$2 AND status<>0 AND monitor<>0) THEN 'down' ELSE 'up' END,last_seen_at=now(),updated_at=now() WHERE id=$1`, deviceID, hostID)
-	if err != nil {
+	if err = recalcDeviceStatusTx(ctx, tx, deviceID, true); err != nil {
+		return "", err
+	}
+	if err = recalcDescendantStatusesTx(ctx, tx, deviceID); err != nil {
 		return "", err
 	}
 	if r.Event != nil {

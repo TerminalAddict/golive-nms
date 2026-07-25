@@ -121,6 +121,16 @@ func (s *Store) Summary(ctx context.Context) (Summary, error) {
 	return x, err
 }
 
+func recalcDeviceStatusTx(ctx context.Context, tx pgx.Tx, deviceID string, seen bool) error {
+	_, err := tx.Exec(ctx, `UPDATE devices d SET status=CASE WHEN EXISTS(SELECT 1 FROM devices p WHERE p.id=d.parent_id AND p.status IN ('down','dependency')) THEN 'dependency' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='down') OR EXISTS(SELECT 1 FROM monit_hosts mh JOIN monit_services ms ON ms.host_id=mh.id WHERE mh.device_id=d.id AND ms.monitor<>0 AND ms.status<>0) THEN 'down' WHEN EXISTS(SELECT 1 FROM monit_hosts mh JOIN monit_services ms ON ms.host_id=mh.id WHERE mh.device_id=d.id AND ms.monitor=0) THEN 'degraded' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='up') OR EXISTS(SELECT 1 FROM monit_hosts WHERE device_id=d.id) OR EXISTS(SELECT 1 FROM agent_reports WHERE device_id=d.id) THEN 'up' ELSE 'unknown' END,last_seen_at=CASE WHEN $2 THEN now() ELSE last_seen_at END,updated_at=now() WHERE d.id=$1`, deviceID, seen)
+	return err
+}
+
+func recalcDescendantStatusesTx(ctx context.Context, tx pgx.Tx, deviceID string) error {
+	_, err := tx.Exec(ctx, `WITH RECURSIVE descendants AS (SELECT id,parent_id FROM devices WHERE parent_id=$1 UNION ALL SELECT d.id,d.parent_id FROM devices d JOIN descendants x ON d.parent_id=x.id) UPDATE devices d SET status=CASE WHEN EXISTS(SELECT 1 FROM devices p WHERE p.id=d.parent_id AND p.status IN ('down','dependency')) THEN 'dependency' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='down') OR EXISTS(SELECT 1 FROM monit_hosts mh JOIN monit_services ms ON ms.host_id=mh.id WHERE mh.device_id=d.id AND ms.monitor<>0 AND ms.status<>0) THEN 'down' WHEN EXISTS(SELECT 1 FROM monit_hosts mh JOIN monit_services ms ON ms.host_id=mh.id WHERE mh.device_id=d.id AND ms.monitor=0) THEN 'degraded' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='up') OR EXISTS(SELECT 1 FROM monit_hosts WHERE device_id=d.id) OR EXISTS(SELECT 1 FROM agent_reports WHERE device_id=d.id) THEN 'up' ELSE 'unknown' END,updated_at=now() WHERE d.id IN(SELECT id FROM descendants)`, deviceID)
+	return err
+}
+
 func (s *Store) Devices(ctx context.Context) ([]Device, error) {
 	rows, err := s.Pool.Query(ctx, `SELECT d.id,coalesce(d.site_id::text,''),coalesce(s.name,''),coalesce(d.parent_id::text,''),d.name,d.address,d.kind,d.status,d.tags,d.last_seen_at FROM devices d LEFT JOIN sites s ON s.id=d.site_id ORDER BY d.name`)
 	if err != nil {
@@ -335,12 +345,10 @@ func (s *Store) RecordResult(ctx context.Context, c DueCheck, up bool, latencyMS
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(ctx, `UPDATE devices d SET status=CASE WHEN EXISTS(SELECT 1 FROM devices p WHERE p.id=d.parent_id AND p.status IN ('down','dependency')) THEN 'dependency' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='down') THEN 'down' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='up') THEN 'up' ELSE 'unknown' END,last_seen_at=CASE WHEN $2 THEN now() ELSE last_seen_at END,updated_at=now() WHERE id=$1`, c.DeviceID, up)
-	if err != nil {
+	if err = recalcDeviceStatusTx(ctx, tx, c.DeviceID, up); err != nil {
 		return err
 	}
-	_, err = tx.Exec(ctx, `WITH RECURSIVE descendants AS (SELECT id,parent_id FROM devices WHERE parent_id=$1 UNION ALL SELECT d.id,d.parent_id FROM devices d JOIN descendants x ON d.parent_id=x.id) UPDATE devices d SET status=CASE WHEN EXISTS(SELECT 1 FROM devices p WHERE p.id=d.parent_id AND p.status IN ('down','dependency')) THEN 'dependency' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='down') THEN 'down' WHEN EXISTS(SELECT 1 FROM checks WHERE device_id=d.id AND status='up') THEN 'up' ELSE 'unknown' END,updated_at=now() WHERE d.id IN(SELECT id FROM descendants)`, c.DeviceID)
-	if err != nil {
+	if err = recalcDescendantStatusesTx(ctx, tx, c.DeviceID); err != nil {
 		return err
 	}
 	_, err = tx.Exec(ctx, `UPDATE incidents i SET state='resolved',resolved_at=now() FROM devices d JOIN devices p ON p.id=d.parent_id WHERE i.device_id=d.id AND i.state IN ('open','acknowledged') AND p.status IN ('down','dependency')`)
@@ -400,8 +408,14 @@ func (s *Store) RecordAgentReport(ctx context.Context, r AgentReport, serial str
 	if err != nil {
 		return "", err
 	}
-	_, err = tx.Exec(ctx, `UPDATE devices SET status='up',last_seen_at=now(),address=$2,updated_at=now() WHERE id=$1`, id, r.Address)
+	_, err = tx.Exec(ctx, `UPDATE devices SET address=$2,last_seen_at=now(),updated_at=now() WHERE id=$1`, id, r.Address)
 	if err != nil {
+		return "", err
+	}
+	if err = recalcDeviceStatusTx(ctx, tx, id, false); err != nil {
+		return "", err
+	}
+	if err = recalcDescendantStatusesTx(ctx, tx, id); err != nil {
 		return "", err
 	}
 	return id, tx.Commit(ctx)
