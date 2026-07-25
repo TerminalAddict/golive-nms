@@ -57,13 +57,6 @@ func (a *API) collectorResult(w http.ResponseWriter, r *http.Request) {
 	if body.Up {
 		newStatus = "up"
 	}
-	if a.notify != nil && !check.Maintenance && ((newStatus == "down" && check.Status != "down" && !check.ParentDown) || (newStatus == "up" && check.Status == "down")) {
-		event := "opened"
-		if body.Up {
-			event = "resolved"
-		}
-		a.notify(check.DeviceName+" is unavailable", check.DeviceID, check.DeviceName, event)
-	}
 	if newStatus == "down" && check.Status != "down" && !check.ParentDown && !check.Maintenance {
 		go a.s.QueueAutomaticRemediation(context.Background(), check.DeviceID, check.Type)
 	}

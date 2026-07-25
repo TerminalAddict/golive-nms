@@ -91,15 +91,10 @@ func New(ctx context.Context, cfg Config, logger *slog.Logger) (*App, error) {
 	}
 	bus := api.NewEventBus()
 	notify := notifier.New(db)
-	notifyFn := func(title, deviceID, device, state string) {
-		go notify.Publish(context.Background(), notifier.Event{Title: title, DeviceID: deviceID, DeviceName: device, State: state})
-	}
-	engine := monitor.New(db, bus.Publish, logger, func(_ context.Context, title, deviceID, device, state string) {
-		notifyFn(title, deviceID, device, state)
-	}, cfg.MetricsURL)
+	engine := monitor.New(db, bus.Publish, logger, nil, cfg.MetricsURL)
 	receiver := deviceevents.New(db, logger, cfg.SyslogUDPListen, cfg.SyslogTCPListen, cfg.TrapListen)
-	backups := configengine.New(db, logger, notifyFn)
-	return &App{Config: cfg, Store: db, Monitor: engine, API: api.New(db, bus, logger, cfg.AgentToken, cfg.MonitUsername, cfg.MonitPassword, cfg.MetricsURL, authority, notifyFn, oidc), Authority: authority, Events: receiver, ConfigBackup: backups, Notifier: notify, logger: logger}, nil
+	backups := configengine.New(db, logger, nil)
+	return &App{Config: cfg, Store: db, Monitor: engine, API: api.New(db, bus, logger, cfg.AgentToken, cfg.MonitUsername, cfg.MonitPassword, cfg.MetricsURL, authority, notify.Test, oidc), Authority: authority, Events: receiver, ConfigBackup: backups, Notifier: notify, logger: logger}, nil
 }
 
 func (a *App) Close() { a.Store.Close() }

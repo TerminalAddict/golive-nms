@@ -454,6 +454,7 @@ func (s *Store) RunRetention(ctx context.Context, days int) {
 		_, _ = s.Pool.Exec(ctx, `DELETE FROM check_samples WHERE observed_at < now()-make_interval(days=>$1)`, days)
 		_, _ = s.Pool.Exec(ctx, `DELETE FROM device_events WHERE received_at < now()-make_interval(days=>$1)`, days)
 		_, _ = s.Pool.Exec(ctx, `DELETE FROM notification_deliveries WHERE created_at < now()-make_interval(days=>$1)`, days)
+		_, _ = s.Pool.Exec(ctx, `DELETE FROM notification_events WHERE processed_at IS NOT NULL AND processed_at < now()-make_interval(days=>$1)`, days)
 		_, _ = s.Pool.Exec(ctx, `DELETE FROM audit_log WHERE created_at < now()-make_interval(days=>$1)`, days)
 		_, _ = s.Pool.Exec(ctx, `DELETE FROM remediation_jobs WHERE queued_at < now()-make_interval(days=>$1) AND state NOT IN ('queued','running')`, days)
 		_, _ = s.Pool.Exec(ctx, `DELETE FROM sessions WHERE expires_at < now()`)

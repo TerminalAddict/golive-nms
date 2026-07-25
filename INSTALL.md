@@ -304,10 +304,24 @@ After signing in:
 1. Open **Settings** and create the required sites/locations.
 2. Create manager, site-manager, and viewer accounts as needed.
 3. Assign site grants to site managers and scoped viewers.
-4. Add encrypted SMTP, Slack, Teams, SNMP, RouterOS, or SSH credentials.
-5. Create alert channels and select their site, failure/recovery behavior, and repeat interval.
+4. Add network credentials needed by SNMP, RouterOS, SSH, or Monit.
+5. Under **Alert channels**, create each email, Slack, or Teams destination. Its SMTP or webhook secret is encrypted automatically; optionally restrict delivery to one site.
 6. Add devices, their parent relationships, and service checks.
-7. Test notification delivery before relying on it operationally.
+7. Use **Send test** beside every alert channel and confirm it arrives before relying on it operationally.
+
+### Notification lifecycle
+
+For each channel, choose whether it receives new failures and recoveries. New incidents are delivered immediately. If an incident remains open and unacknowledged, GoLive sends another notification every 24 hours. Selecting **Acknowledge** stops reminders without closing the incident.
+
+When the failed check or Monit service recovers, GoLive automatically changes the incident to **resolved**, records the repair time, stops future reminders, and sends a recovery notification when enabled. Recovered incidents never need manual acknowledgement.
+
+Email channels support multiple comma-separated recipients and three SMTP transport modes:
+
+- **STARTTLS**, normally TCP `587`.
+- **Implicit TLS**, normally TCP `465`.
+- **Plain SMTP**, intended only for a trusted private relay.
+
+Slack and Teams channels use an HTTPS incoming-webhook or workflow URL. GoLive stores SMTP passwords and webhook URLs encrypted in PostgreSQL.
 
 ## 8. Install a Linux agent
 
@@ -520,7 +534,7 @@ Deleting a Monit credential from **Settings → Network credentials** also disab
 | NMS or remote collector → SNMP target | `161/udp` by default | SNMP polling |
 | NMS or remote collector → MikroTik | `8728/tcp` or `8729/tcp` | RouterOS API/API-SSL checks |
 | NMS → managed device | `22/tcp` | Optional SSH configuration backup |
-| NMS → SMTP server | Configured SMTP port, commonly `25`, `465`, or `587` TCP | Email alerts |
+| NMS → SMTP server | Configured SMTP port, commonly `25`, `465`, or `587` TCP | Email alerts using plain relay, implicit TLS, or STARTTLS |
 | NMS → Slack/Teams | `443/tcp` HTTPS | Webhook alerts |
 | NMS → OIDC provider | `443/tcp` HTTPS | SSO discovery and authentication |
 | Docker host → Docker Hub/GitHub | `443/tcp` HTTPS | Third-party base images, source updates, and release packages |

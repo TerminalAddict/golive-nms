@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/TerminalAddict/golive-nms/internal/store"
@@ -32,6 +33,17 @@ func (a *API) createCredential(w http.ResponseWriter, r *http.Request) {
 	if c.Kind == "monit" && (strings.TrimSpace(c.Secret["username"]) == "" || c.Secret["password"] == "") {
 		problem(w, 400, errText("Monit username and password are required"))
 		return
+	}
+	if c.Kind == "smtp" && (strings.TrimSpace(c.Secret["host"]) == "" || strings.TrimSpace(c.Secret["from"]) == "" || strings.TrimSpace(c.Secret["to"]) == "") {
+		problem(w, 400, errText("SMTP host, from address, and recipient are required"))
+		return
+	}
+	if c.Kind == "webhook" {
+		webhook, err := url.Parse(strings.TrimSpace(c.Secret["url"]))
+		if err != nil || webhook.Scheme != "https" || webhook.Host == "" {
+			problem(w, 400, errText("webhook URL must be a valid https:// URL"))
+			return
+		}
 	}
 	v, e := a.s.CreateCredential(r.Context(), c)
 	if e != nil {

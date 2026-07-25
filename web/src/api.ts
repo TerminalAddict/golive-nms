@@ -206,6 +206,10 @@ export const api = {
     }),
   deleteChannel: (id: string) =>
     request<void>(`/notification-channels/${id}`, { method: "DELETE" }),
+  testChannel: (id: string) =>
+    request<{ ok: boolean; message: string }>(`/notification-channels/${id}/test`, {
+      method: "POST",
+    }),
   summary: () => request<Summary>("/summary"),
   devices: () => request<Device[]>("/devices"),
   monitServices: () => request<MonitService[]>("/monit-services"),

@@ -73,7 +73,9 @@ Database migrations are additive and run during application startup. The bundled
 1. Add a device in the web interface.
 2. Open Devices and add an HTTP(S) check such as `https://example.com`, or a TCP check such as `router.example.com:22`.
 3. Checks run every 30 seconds by default. Failure creates one active incident; recovery resolves it automatically.
-4. Dashboard and incident views update through a live event stream.
+4. Configured email, Slack, and Teams channels receive the failure immediately. Unacknowledged incidents repeat every 24 hours.
+5. A recovery marks the incident resolved automatically, stops reminders, and sends a recovery notification. Operators only need to acknowledge incidents that still require attention.
+6. Dashboard and incident views update through a live event stream.
 
 ## Standalone Linux agent
 
@@ -154,7 +156,7 @@ Implemented now:
 - Responsive dark GoLive interface with health ring, device inventory, incidents, and topology canvas.
 - Versioned REST endpoints under `/api/v1` and server-sent live events.
 - Ping, HTTP, TCP, and SNMP v2c/v3 checks, durable scheduling, latency samples, dependency suppression, incident deduplication, acknowledgement, and recovery.
-- Encrypted SNMP/SMTP/webhook credentials and email, Slack, and Teams notification channels.
+- Encrypted SMTP/webhook credentials and site-routed email, Slack, and Teams channels with test delivery, immediate problem/recovery messages, and 24-hour reminders that stop on acknowledgement.
 - Monit `/collector` compatibility for complete status snapshots and state-change events.
 - Role- and site-scoped Monit start, stop, restart, monitor, and unmonitor controls with encrypted credentials and an action audit trail.
 - Local users, four roles, hashed sessions, service API tokens, mutation auditing, and identity-management UI.

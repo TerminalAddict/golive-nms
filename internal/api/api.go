@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -20,12 +21,12 @@ type API struct {
 	monitUsername, monitPassword string
 	metricsURL                   string
 	authority                    *pki.Authority
-	notify                       func(string, string, string, string)
+	testNotification             func(context.Context, string) error
 	oidc                         *sso.OIDC
 }
 
-func New(s *store.Store, e *EventBus, l *slog.Logger, token, user, password, metricsURL string, authority *pki.Authority, notify func(string, string, string, string), oidc *sso.OIDC) *API {
-	return &API{s: s, events: e, logger: l, agentToken: token, monitUsername: user, monitPassword: password, metricsURL: metricsURL, authority: authority, notify: notify, oidc: oidc}
+func New(s *store.Store, e *EventBus, l *slog.Logger, token, user, password, metricsURL string, authority *pki.Authority, testNotification func(context.Context, string) error, oidc *sso.OIDC) *API {
+	return &API{s: s, events: e, logger: l, agentToken: token, monitUsername: user, monitPassword: password, metricsURL: metricsURL, authority: authority, testNotification: testNotification, oidc: oidc}
 }
 func (a *API) Routes(m *http.ServeMux) {
 	m.HandleFunc("POST /api/v1/auth/login", a.login)
@@ -47,6 +48,7 @@ func (a *API) Routes(m *http.ServeMux) {
 	m.HandleFunc("GET /api/v1/notification-channels", a.channels)
 	m.HandleFunc("POST /api/v1/notification-channels", a.createChannel)
 	m.HandleFunc("DELETE /api/v1/notification-channels/{id}", a.deleteChannel)
+	m.HandleFunc("POST /api/v1/notification-channels/{id}/test", a.testChannel)
 	m.HandleFunc("GET /api/v1/sites", a.sites)
 	m.HandleFunc("POST /api/v1/sites", a.createSite)
 	m.HandleFunc("DELETE /api/v1/sites/{id}", a.deleteSite)

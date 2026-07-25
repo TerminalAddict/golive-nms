@@ -1350,6 +1350,8 @@ function IdentitySettings({ current }: { current: User }) {
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [credentialDeleteBusy, setCredentialDeleteBusy] = useState("");
   const [credentialDeleteFeedback, setCredentialDeleteFeedback] = useState<{ ok: boolean; message: string } | null>(null);
+  const [channelBusy, setChannelBusy] = useState("");
+  const [channelFeedback, setChannelFeedback] = useState<{ ok: boolean; message: string } | null>(null);
   const refresh = useCallback(async () => {
     setTokens(await api.tokens());
     setCredentials(await api.credentials());
@@ -1842,27 +1844,54 @@ function IdentitySettings({ current }: { current: User }) {
           </form>
         </div>
       )}
-      {current.role !== "viewer" && (
+      {(current.role === "administrator" || current.role === "manager") && (
         <div className="card panel">
           <Title text="Alert channels" />
+          {channelFeedback && (
+            <div className={`inlineFeedback ${channelFeedback.ok ? "success" : "failure"}`} role="status">
+              <b>{channelFeedback.ok ? "Notification ready" : "Notification failed"}</b>
+              <span>{channelFeedback.message}</span>
+            </div>
+          )}
           <div className="rows">
             {channels.map((c) => (
               <div className="row" key={c.id}>
                 <div className="grow">
                   <b>{c.name}</b>
                   <small>
-                    {c.kind} · {c.siteId ? sites.find((s) => s.id === c.siteId)?.name ?? "Site" : "All sites"} · {c.notifyOpened ? "failures" : ""}{c.notifyOpened && c.notifyResolved ? " + " : ""}{c.notifyResolved ? "recoveries" : ""}{c.repeatMinutes ? ` · repeat ${c.repeatMinutes}m` : ""}
+                    {c.kind} · {c.siteId ? sites.find((s) => s.id === c.siteId)?.name ?? "Site" : "All sites"} · {c.notifyOpened ? "failures" : ""}{c.notifyOpened && c.notifyResolved ? " + " : ""}{c.notifyResolved ? "recoveries" : ""}{c.notifyOpened ? " · repeats every 24h until acknowledged" : ""}
                   </small>
                 </div>
-                <button
-                  className="secondary"
-                  onClick={async () => {
-                    await api.deleteChannel(c.id);
-                    refresh();
-                  }}
-                >
-                  Delete
-                </button>
+                <div className="rowActions">
+                  <button
+                    className="secondary"
+                    disabled={!!channelBusy}
+                    onClick={async () => {
+                      setChannelBusy(c.id);
+                      setChannelFeedback(null);
+                      try {
+                        const result = await api.testChannel(c.id);
+                        setChannelFeedback({ ok: true, message: `${c.name}: ${result.message}` });
+                      } catch (error) {
+                        setChannelFeedback({ ok: false, message: error instanceof Error ? error.message : "Test notification failed" });
+                      } finally {
+                        setChannelBusy("");
+                      }
+                    }}
+                  >
+                    {channelBusy === c.id ? "Sending…" : "Send test"}
+                  </button>
+                  <button
+                    className="secondary"
+                    disabled={!!channelBusy}
+                    onClick={async () => {
+                      await api.deleteChannel(c.id);
+                      refresh();
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1874,33 +1903,49 @@ function IdentitySettings({ current }: { current: User }) {
               const f = new FormData(form);
               const name = String(f.get("name"));
               const kind = channelKind;
+              setChannelBusy("create");
+              setChannelFeedback(null);
               const secret: Record<string, string> =
                 kind === "email"
                   ? {
                       host: String(f.get("host")),
                       port: String(f.get("port")),
+                      security: String(f.get("security")),
                       username: String(f.get("username")),
                       password: String(f.get("password")),
                       from: String(f.get("from")),
                       to: String(f.get("to")),
                     }
                   : { url: String(f.get("url")) };
-              const cred = await api.createCredential({
-                name: `${name} delivery`,
-                kind: kind === "email" ? "smtp" : "webhook",
-                secret,
-              });
-              await api.createChannel({ name, kind, credentialId: cred.id, siteId: String(f.get("siteId")), notifyOpened: f.has("notifyOpened"), notifyResolved: f.has("notifyResolved"), repeatMinutes: Number(f.get("repeatMinutes") || 0) });
-              form.reset();
-              refresh();
+              let credentialId = "";
+              try {
+                const cred = await api.createCredential({
+                  name: `${name} delivery`,
+                  kind: kind === "email" ? "smtp" : "webhook",
+                  secret,
+                });
+                credentialId = cred.id;
+                const channel = await api.createChannel({ name, kind, credentialId: cred.id, siteId: String(f.get("siteId")), notifyOpened: f.has("notifyOpened"), notifyResolved: f.has("notifyResolved"), repeatMinutes: 1440 });
+                form.reset();
+                await refresh();
+                setChannelFeedback({ ok: true, message: `${channel.name} was saved. Send a test notification to verify delivery.` });
+              } catch (error) {
+                if (credentialId) await api.deleteCredential(credentialId).catch(() => undefined);
+                setChannelFeedback({ ok: false, message: error instanceof Error ? error.message : "Could not create notification channel" });
+              } finally {
+                setChannelBusy("");
+              }
             }}
           >
             <h3>Add alert destination</h3>
             <input required name="name" placeholder="Channel name" />
-            <select name="siteId"><option value="">All sites</option>{sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+            <select name="siteId">
+              {current.role === "administrator" && <option value="">All sites</option>}
+              {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
             <label><input name="notifyOpened" type="checkbox" defaultChecked /> New failures</label>
             <label><input name="notifyResolved" type="checkbox" defaultChecked /> Recoveries</label>
-            <input name="repeatMinutes" type="number" min="0" max="1440" placeholder="Repeat minutes (0 disables)" />
+            <small>Unacknowledged failures are repeated every 24 hours. Acknowledged or recovered incidents stop reminders automatically.</small>
             <select
               value={channelKind}
               onChange={(e) =>
@@ -1915,6 +1960,11 @@ function IdentitySettings({ current }: { current: User }) {
               <>
                 <input required name="host" placeholder="SMTP host" />
                 <input name="port" placeholder="587" />
+                <select name="security" defaultValue="starttls">
+                  <option value="starttls">STARTTLS (usually port 587)</option>
+                  <option value="implicit_tls">Implicit TLS (usually port 465)</option>
+                  <option value="plain">Plain SMTP (trusted networks only)</option>
+                </select>
                 <input name="username" placeholder="SMTP username" />
                 <input
                   name="password"
@@ -1928,10 +1978,10 @@ function IdentitySettings({ current }: { current: User }) {
                   placeholder="From address"
                 />
                 <input
-                  required
                   name="to"
-                  type="email"
-                  placeholder="Recipient"
+                  required
+                  type="text"
+                  placeholder="Recipients (comma separated)"
                 />
               </>
             ) : (
@@ -1942,7 +1992,7 @@ function IdentitySettings({ current }: { current: User }) {
                 placeholder="Incoming webhook URL"
               />
             )}
-            <button className="primary">Create channel</button>
+            <button className="primary" disabled={!!channelBusy}>{channelBusy === "create" ? "Saving…" : "Create channel"}</button>
           </form>
         </div>
       )}

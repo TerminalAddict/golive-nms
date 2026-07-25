@@ -60,10 +60,48 @@ func (a *API) deleteChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.PathValue("id")
+	channel, e := a.s.NotificationChannel(r.Context(), id)
+	if e != nil {
+		problem(w, 404, e)
+		return
+	}
+	scope, e := a.scope(r)
+	if e != nil || (channel.SiteID == "" && u.Role != "administrator") || (channel.SiteID != "" && !scope.can(channel.SiteID)) {
+		problem(w, 403, errText("site access denied"))
+		return
+	}
 	if e := a.s.DeleteNotificationChannel(r.Context(), id); e != nil {
 		problem(w, 404, e)
 		return
 	}
 	_ = a.s.Audit(r.Context(), u.ID, "delete", "notification_channel", id)
 	w.WriteHeader(204)
+}
+
+func (a *API) testChannel(w http.ResponseWriter, r *http.Request) {
+	u, ok := CurrentUser(r.Context())
+	if !ok || (u.Role != "administrator" && u.Role != "manager") {
+		problem(w, 403, errText("manager role required"))
+		return
+	}
+	channel, err := a.s.NotificationChannel(r.Context(), r.PathValue("id"))
+	if err != nil {
+		problem(w, 404, err)
+		return
+	}
+	scope, err := a.scope(r)
+	if err != nil || (channel.SiteID == "" && u.Role != "administrator") || (channel.SiteID != "" && !scope.can(channel.SiteID)) {
+		problem(w, 403, errText("site access denied"))
+		return
+	}
+	if a.testNotification == nil {
+		problem(w, 503, errText("notification service is unavailable"))
+		return
+	}
+	if err = a.testNotification(r.Context(), channel.ID); err != nil {
+		problem(w, 502, err)
+		return
+	}
+	_ = a.s.Audit(r.Context(), u.ID, "test", "notification_channel", channel.ID)
+	jsonOut(w, 200, map[string]any{"ok": true, "message": "Test notification delivered successfully"})
 }
