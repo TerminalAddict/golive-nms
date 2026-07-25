@@ -299,6 +299,10 @@ function Console({ user, theme, onToggleTheme }: { user: User; theme: Theme; onT
             devices={devices}
             checks={checks}
             incidents={incidents}
+            onDevice={(device) => {
+              setEditingDevice(device);
+              setView("devices");
+            }}
           />
         )}{" "}
         {view === "devices" && (editingDevice ? (
@@ -426,11 +430,13 @@ function Overview({
   devices,
   checks,
   incidents,
+  onDevice,
 }: {
   summary: Summary;
   devices: Device[];
   checks: Check[];
   incidents: Incident[];
+  onDevice: (device: Device) => void;
 }) {
   type Widget = "summary" | "stats" | "performance" | "devices" | "incidents";
   const [widgets, setWidgets] = useState<Widget[]>(() => {
@@ -501,7 +507,7 @@ function Overview({
       <div className="grid">
         {widgets.includes("devices") && <div className="card panel">
           <Title text="Device health" />
-          <DeviceRows devices={devices.slice(0, 6)} />
+          <DeviceRows devices={devices} onDevice={onDevice} />
         </div>}
         {widgets.includes("incidents") && <div className="card panel">
           <Title text="Recent incidents" />
@@ -627,11 +633,27 @@ function Status({ value }: { value: string }) {
     </span>
   );
 }
-function DeviceRows({ devices }: { devices: Device[] }) {
+function DeviceRows({ devices, onDevice }: { devices: Device[]; onDevice: (device: Device) => void }) {
+  const priority: Record<Device["Status"], number> = {
+    degraded: 0,
+    down: 1,
+    dependency: 2,
+    unknown: 3,
+    up: 4,
+  };
+  const visible = [...devices]
+    .sort((a, b) => priority[a.Status] - priority[b.Status] || a.Name.localeCompare(b.Name))
+    .slice(0, 6);
   return devices.length ? (
     <div className="rows">
-      {devices.map((d) => (
-        <div className="row" key={d.ID}>
+      {visible.map((d) => (
+        <button
+          className="row dashboardDeviceRow"
+          key={d.ID}
+          type="button"
+          onClick={() => onDevice(d)}
+          aria-label={`Open ${d.Name} device workspace`}
+        >
           <div className="deviceIcon">
             <Server />
           </div>
@@ -642,7 +664,7 @@ function DeviceRows({ devices }: { devices: Device[] }) {
             </small>
           </div>
           <Status value={d.Status} />
-        </div>
+        </button>
       ))}
     </div>
   ) : (
