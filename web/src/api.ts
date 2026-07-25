@@ -217,7 +217,7 @@ export const api = {
       body: JSON.stringify({ URL, CredentialID }),
     }),
   testMonitControl: (deviceId: string) =>
-    request<{ ok: boolean; message: string }>(`/devices/${deviceId}/monit-control/test`, {
+    request<{ ok: boolean; message: string; services: number }>(`/devices/${deviceId}/monit-control/test`, {
       method: "POST",
     }),
   monitActions: (deviceId: string) =>

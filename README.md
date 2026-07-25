@@ -108,9 +108,9 @@ set eventqueue basedir /var/lib/monit/events slots 1000
 set mmonit https://monit:YOUR_MONIT_PASSWORD@nms.example.com:9443/collector
 ```
 
-GoLive accepts Monit v2 status and event XML, including gzip compression, maintains host/service state, and turns failing Monit events into GoLive incidents.
+GoLive accepts Monit v2 status and event XML, including gzip compression, maintains host/service state, and turns failing Monit events into GoLive incidents. It supports both M/Monit collector snapshots and the XML returned by Monit's port-2812 status endpoint.
 
-GoLive can also start, stop, restart, monitor, and unmonitor reported services through Monit's HTTP interface. Create a **Monit remote-control credential** under **Settings → Network credentials**, open the device's **Manage** dialog, and set its endpoint (for example `http://10.0.0.12:2812`). The Monit host must allow inbound TCP `2812` from the NMS server only. See [INSTALL.md](INSTALL.md#remote-control-of-monit-services) for the complete and security-conscious configuration.
+GoLive can inventory all configured Monit services and start, stop, restart, monitor, and unmonitor them through Monit's HTTP interface. Create a **Monit remote-control credential** under **Settings → Network credentials**, open the device workspace, set its endpoint (for example `http://10.0.0.12:2812`), then select **Test & sync services**. The Monit host must allow inbound TCP `2812` from the NMS server only. See [INSTALL.md](INSTALL.md#remote-control-of-monit-services) for the complete and security-conscious configuration.
 
 ## Remote collectors and secure enrollment
 

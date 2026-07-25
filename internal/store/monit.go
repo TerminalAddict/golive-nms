@@ -13,6 +13,7 @@ type MonitReport struct {
 	Incarnation           int64
 	Services              []MonitService
 	Event                 *MonitEvent
+	FullSnapshot          bool
 }
 type MonitService struct {
 	Name      string
@@ -48,32 +49,69 @@ func (s *Store) RecordMonit(ctx context.Context, r MonitReport) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	if err = applyMonitReportTx(ctx, tx, hostID, deviceID, r); err != nil {
+		return "", err
+	}
+	return deviceID, tx.Commit(ctx)
+}
+
+func (s *Store) SyncMonit(ctx context.Context, deviceID string, r MonitReport) error {
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	var hostID, linkedDeviceID string
+	err = tx.QueryRow(ctx, `SELECT id,device_id FROM monit_hosts WHERE monit_id=$1`, r.ID).Scan(&hostID, &linkedDeviceID)
+	if err == nil && linkedDeviceID != deviceID {
+		return fmt.Errorf("Monit host %q is already linked to another device", r.Hostname)
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = tx.QueryRow(ctx, `SELECT id FROM monit_hosts WHERE device_id=$1`, deviceID).Scan(&hostID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = tx.QueryRow(ctx, `INSERT INTO monit_hosts(monit_id,device_id,version,incarnation) VALUES($1,$2,$3,$4) RETURNING id`, r.ID, deviceID, r.Version, r.Incarnation).Scan(&hostID)
+		} else if err == nil {
+			_, err = tx.Exec(ctx, `UPDATE monit_hosts SET monit_id=$2,version=$3,incarnation=$4,last_report_at=now() WHERE id=$1`, hostID, r.ID, r.Version, r.Incarnation)
+		}
+	} else if err == nil {
+		_, err = tx.Exec(ctx, `UPDATE monit_hosts SET version=$2,incarnation=$3,last_report_at=now() WHERE id=$1`, hostID, r.Version, r.Incarnation)
+	}
+	if err != nil {
+		return err
+	}
+	if err = applyMonitReportTx(ctx, tx, hostID, deviceID, r); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func applyMonitReportTx(ctx context.Context, tx pgx.Tx, hostID, deviceID string, r MonitReport) error {
 	for _, v := range r.Services {
-		_, err = tx.Exec(ctx, `INSERT INTO monit_services(host_id,name,type,status,monitor,collected_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(host_id,name) DO UPDATE SET type=excluded.type,status=excluded.status,monitor=excluded.monitor,collected_at=excluded.collected_at,updated_at=now()`, hostID, v.Name, v.Type, v.Status, v.Monitor, v.Collected)
+		_, err := tx.Exec(ctx, `INSERT INTO monit_services(host_id,name,type,status,monitor,collected_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(host_id,name) DO UPDATE SET type=excluded.type,status=excluded.status,monitor=excluded.monitor,collected_at=excluded.collected_at,updated_at=now()`, hostID, v.Name, v.Type, v.Status, v.Monitor, v.Collected)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
-	if len(r.Services) > 0 {
+	if r.FullSnapshot {
 		names := make([]string, 0, len(r.Services))
 		for _, v := range r.Services {
 			names = append(names, v.Name)
 		}
-		if _, err = tx.Exec(ctx, `DELETE FROM monit_services WHERE host_id=$1 AND NOT (name=ANY($2))`, hostID, names); err != nil {
-			return "", err
+		if _, err := tx.Exec(ctx, `DELETE FROM monit_services WHERE host_id=$1 AND NOT (name=ANY($2))`, hostID, names); err != nil {
+			return err
 		}
 	}
-	if err = recalcDeviceStatusTx(ctx, tx, deviceID, true); err != nil {
-		return "", err
+	if err := recalcDeviceStatusTx(ctx, tx, deviceID, true); err != nil {
+		return err
 	}
-	if err = recalcDescendantStatusesTx(ctx, tx, deviceID); err != nil {
-		return "", err
+	if err := recalcDescendantStatusesTx(ctx, tx, deviceID); err != nil {
+		return err
 	}
 	if r.Event != nil {
 		e := r.Event
-		_, err = tx.Exec(ctx, `INSERT INTO monit_events(host_id,service,event_id,state,action,message,collected_at) VALUES($1,$2,$3,$4,$5,$6,$7)`, hostID, e.Service, e.ID, e.State, e.Action, e.Message, e.Collected)
+		_, err := tx.Exec(ctx, `INSERT INTO monit_events(host_id,service,event_id,state,action,message,collected_at) VALUES($1,$2,$3,$4,$5,$6,$7)`, hostID, e.Service, e.ID, e.State, e.Action, e.Message, e.Collected)
 		if err != nil {
-			return "", err
+			return err
 		}
 		key := r.ID + ":" + e.Service + ":" + fmt.Sprint(e.ID)
 		if e.State != 0 {
@@ -82,10 +120,10 @@ func (s *Store) RecordMonit(ctx context.Context, r MonitReport) (string, error) 
 			_, err = tx.Exec(ctx, `UPDATE incidents SET state='resolved',resolved_at=now() WHERE source='monit' AND source_key=$1 AND state IN ('open','acknowledged')`, key)
 		}
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
-	return deviceID, tx.Commit(ctx)
+	return nil
 }
 
 func (s *Store) MonitServices(ctx context.Context) ([]MonitServiceStatus, error) {

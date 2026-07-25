@@ -492,8 +492,9 @@ Configure GoLive:
 1. Open **Settings → Network credentials** and add a **Monit remote-control credential** using the same username and password.
 2. Open **Devices**, click the device name, and find **Monit remote control**.
 3. Enter the URL reachable from the GoLive container, such as `http://10.0.0.12:2812`, select the credential, and save.
-4. Select **Test connection**. A successful result confirms network access, authentication, and a working Monit HTTP interface.
-5. Use the action buttons beside a reported Monit service. GoLive immediately shows whether Monit accepted the command and keeps recent successes and failures visible. The service status itself is confirmed when the next Monit report arrives.
+4. Select **Test & sync services**. GoLive reads Monit's XML status from `/_status?format=xml`, imports every configured system, process, file, filesystem, host, program, directory, FIFO, and network service, and confirms network access and authentication.
+5. Use **Test & sync services** again after changing Monit's configuration if you want the new inventory immediately. Normal M/Monit collector snapshots continue to refresh the service states automatically.
+6. Use the action buttons beside a reported Monit service. GoLive immediately shows whether Monit accepted the command and keeps recent successes and failures visible. The service status itself is confirmed by the next collector report or service synchronization.
 
 The `set mmonit .../collector` credentials remain separate from the port-2812 credentials. `register without credentials` is fine for reporting; it does not supply credentials for remote commands.
 

@@ -46,27 +46,26 @@ func TestSendMonitActionReportsHTTPError(t *testing.T) {
 	}
 }
 
-func TestSendMonitProbe(t *testing.T) {
+func TestFetchMonitStatus(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/_status" {
+		if r.Method != http.MethodGet || r.URL.Path != "/_status" || r.URL.Query().Get("format") != "xml" {
 			t.Errorf("request = %s %s", r.Method, r.URL.Path)
 		}
 		username, password, ok := r.BasicAuth()
 		if !ok || username != "golive" || password != "secret" {
 			t.Errorf("unexpected basic auth %q %q", username, password)
 		}
-		if err := r.ParseForm(); err != nil {
-			t.Fatal(err)
-		}
-		if r.Form.Get("format") != "text" || r.Form.Get("securitytoken") == "" {
-			t.Errorf("unexpected form: %#v", r.Form)
-		}
-		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/xml")
+		_, _ = w.Write([]byte(`<monit><server><id>abc123</id><incarnation>42</incarnation><version>5.35.2</version><localhostname>media-01</localhostname></server><service type="3"><name>plex</name><status>0</status><monitor>1</monitor></service></monit>`))
 	}))
 	defer server.Close()
-	if err := sendMonitProbe(context.Background(), server.Client(), server.URL, "golive", "secret"); err != nil {
+	report, err := fetchMonitStatus(context.Background(), server.Client(), server.URL, "golive", "secret")
+	if err != nil {
 		t.Fatal(err)
+	}
+	if report.ID != "abc123" || report.Hostname != "media-01" || len(report.Services) != 1 || report.Services[0].Name != "plex" || !report.FullSnapshot {
+		t.Fatalf("unexpected report: %+v", report)
 	}
 }
 

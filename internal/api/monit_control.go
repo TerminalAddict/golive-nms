@@ -32,8 +32,36 @@ func sendMonitAction(ctx context.Context, client *http.Client, endpoint, usernam
 	return sendMonitRequest(ctx, client, endpoint, username, password, "/_doaction", url.Values{"action": {action}, "service": {service}})
 }
 
-func sendMonitProbe(ctx context.Context, client *http.Client, endpoint, username, password string) error {
-	return sendMonitRequest(ctx, client, endpoint, username, password, "/_status", url.Values{})
+func fetchMonitStatus(ctx context.Context, client *http.Client, endpoint, username, password string) (store.MonitReport, error) {
+	base, err := validateMonitURL(endpoint)
+	if err != nil {
+		return store.MonitReport{}, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/_status?format=xml", nil)
+	if err != nil {
+		return store.MonitReport{}, err
+	}
+	req.Header.Set("Accept", "application/xml, text/xml")
+	req.SetBasicAuth(username, password)
+	response, err := client.Do(req)
+	if err != nil {
+		return store.MonitReport{}, fmt.Errorf("contact Monit: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
+		message := strings.TrimSpace(string(body))
+		if message == "" {
+			message = response.Status
+		}
+		return store.MonitReport{}, fmt.Errorf("Monit returned %s: %s", response.Status, message)
+	}
+	report, err := decodeMonitReport(io.LimitReader(response.Body, 8<<20))
+	if err != nil {
+		return store.MonitReport{}, fmt.Errorf("decode Monit status XML: %w", err)
+	}
+	report.FullSnapshot = true
+	return report, nil
 }
 
 func sendMonitRequest(ctx context.Context, client *http.Client, endpoint, username, password, path string, form url.Values) error {
@@ -153,11 +181,21 @@ func (a *API) testMonitControl(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
-	if err = sendMonitProbe(ctx, client, control.URL, credential.Secret["username"], credential.Secret["password"]); err != nil {
+	report, err := fetchMonitStatus(ctx, client, control.URL, credential.Secret["username"], credential.Secret["password"])
+	if err != nil {
 		problem(w, 502, err)
 		return
 	}
-	jsonOut(w, 200, map[string]any{"ok": true, "message": "Connected and authenticated to Monit successfully"})
+	if err = a.s.SyncMonit(ctx, deviceID, report); err != nil {
+		problem(w, 500, err)
+		return
+	}
+	a.events.Publish("monit.report", map[string]string{"deviceId": deviceID, "monitId": report.ID})
+	jsonOut(w, 200, map[string]any{
+		"ok":       true,
+		"services": len(report.Services),
+		"message":  fmt.Sprintf("Connected to Monit and synchronized %d configured services", len(report.Services)),
+	})
 }
 
 func (a *API) runMonitAction(w http.ResponseWriter, r *http.Request) {

@@ -2125,10 +2125,10 @@ function DeviceModal({
             {!reported.length && <small>No Monit services have been reported yet.</small>}
           </div>
         )}
-        {device && reported.length > 0 && (
+        {device && (
           <div className="monitControl">
-            <b>Monit remote control</b>
-            <small>GoLive connects from the NMS server to this host.</small>
+            <b>Monit connection and service inventory</b>
+            <small>GoLive connects from the NMS server to port 2812 to discover every configured service and provide remote control.</small>
             <input value={monitURL} onChange={(e) => { setMonitURL(e.target.value); setControlReady(false); }} placeholder={`http://${address || "host"}:2812`} />
             <select value={monitCredential} onChange={(e) => { setMonitCredential(e.target.value); setControlReady(false); }}>
               <option value="">Select a Monit credential</option>
@@ -2162,11 +2162,12 @@ function DeviceModal({
                   try {
                     const result = await api.testMonitControl(device.ID);
                     setActionFeedback({ ok: true, message: result.message });
+                    onSaved(device);
                   } catch (error) {
                     setActionFeedback({ ok: false, message: error instanceof Error ? error.message : "Could not connect to Monit" });
                   } finally { setActionBusy(""); }
                 }}
-              >{actionBusy === "test" ? "Testing…" : "Test connection"}</button>
+              >{actionBusy === "test" ? "Synchronizing…" : "Test & sync services"}</button>
             </div>
             {actionFeedback && (
               <div className={`inlineFeedback compact ${actionFeedback.ok ? "success" : "failure"}`} role="status">
