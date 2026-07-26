@@ -35,6 +35,8 @@ import type {
   User,
 } from "./api";
 import type { Check, Device, Incident, MonitService, Summary } from "./types";
+import { settingsPagesForRole } from "./settings";
+import type { SettingsPage } from "./settings";
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 
 type View =
@@ -1329,6 +1331,12 @@ function UserSiteEditor({ user, sites }: { user: User; sites: Site[] }) {
 }
 
 function IdentitySettings({ current }: { current: User }) {
+  const canConfigure = current.role === "administrator" || current.role === "manager";
+  const settingsPages = settingsPagesForRole(current.role);
+  const [settingsPage, setSettingsPage] = useState<SettingsPage>(() => {
+    const saved = localStorage.getItem("golive-settings-page");
+    return (saved as SettingsPage) || "access";
+  });
   const [users, setUsers] = useState<User[]>([]);
   const [tokens, setTokens] = useState<APIToken[]>([]);
   const [credentials, setCredentials] = useState<Credential[]>([]);
@@ -1366,9 +1374,42 @@ function IdentitySettings({ current }: { current: User }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+  useEffect(() => {
+    if (!settingsPages.some((page) => page.id === settingsPage)) {
+      setSettingsPage("access");
+    }
+  }, [settingsPage, settingsPages]);
+  const activePage = settingsPages.find((page) => page.id === settingsPage) ?? settingsPages[0];
+  const selectSettingsPage = (page: SettingsPage) => {
+    setSettingsPage(page);
+    localStorage.setItem("golive-settings-page", page);
+  };
   return (
-    <section className="content identityGrid">
-      {current.role === "administrator" && (
+    <section className="content settingsWorkspace">
+      <div className="settingsHeading">
+        <div>
+          <span className="eyebrow">SETTINGS</span>
+          <h2>{activePage.label}</h2>
+          <p>{activePage.description}</p>
+        </div>
+      </div>
+      <div className="settingsLayout">
+        <nav className="settingsNav" aria-label="Settings pages">
+          {settingsPages.map((page) => (
+            <button
+              type="button"
+              key={page.id}
+              className={settingsPage === page.id ? "active" : ""}
+              aria-current={settingsPage === page.id ? "page" : undefined}
+              onClick={() => selectSettingsPage(page.id)}
+            >
+              <b>{page.label}</b>
+              <small>{page.description}</small>
+            </button>
+          ))}
+        </nav>
+        <div className="identityGrid settingsPageContent">
+      {settingsPage === "access" && current.role === "administrator" && (
         <div className="card panel">
           <Title text="Users" />
           <div className="rows">
@@ -1461,7 +1502,7 @@ function IdentitySettings({ current }: { current: User }) {
           </form>
         </div>
       )}
-      <div className="card panel">
+      {settingsPage === "access" && <div className="card panel">
         <Title text="API tokens" />
         {createdToken && (
           <div className="tokenReveal">
@@ -1509,8 +1550,8 @@ function IdentitySettings({ current }: { current: User }) {
           <input name="name" required placeholder="Automation name" />
           <button className="primary">Create token</button>
         </form>
-      </div>
-      {(current.role === "administrator" || current.role === "manager") && (
+      </div>}
+      {settingsPage === "credentials" && canConfigure && (
         <div className="card panel">
           <Title text="Network credentials" />
           {credentialDeleteFeedback && (
@@ -1681,7 +1722,7 @@ function IdentitySettings({ current }: { current: User }) {
           </form>
         </div>
       )}
-      {(current.role === "administrator" || current.role === "manager") && (
+      {settingsPage === "sites" && canConfigure && (
         <div className="card panel">
           <Title text="Sites" />
           <div className="rows">
@@ -1733,7 +1774,7 @@ function IdentitySettings({ current }: { current: User }) {
           </form>
         </div>
       )}
-      {(current.role === "administrator" || current.role === "manager") && (
+      {settingsPage === "agents" && canConfigure && (
         <div className="card panel">
           <Title text="Agents and collectors" />
           {enrollment && (
@@ -1819,7 +1860,7 @@ function IdentitySettings({ current }: { current: User }) {
           </form>
         </div>
       )}
-      {current.role !== "viewer" && (
+      {settingsPage === "sites" && current.role !== "viewer" && (
         <div className="card panel">
           <Title text="Maintenance windows" />
           <div className="rows">
@@ -1844,7 +1885,7 @@ function IdentitySettings({ current }: { current: User }) {
           </form>
         </div>
       )}
-      {(current.role === "administrator" || current.role === "manager") && (
+      {settingsPage === "notifications" && canConfigure && (
         <div className="card panel">
           <Title text="Alert channels" />
           {channelFeedback && (
@@ -1996,6 +2037,8 @@ function IdentitySettings({ current }: { current: User }) {
           </form>
         </div>
       )}
+        </div>
+      </div>
     </section>
   );
 }
