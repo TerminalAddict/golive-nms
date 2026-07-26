@@ -97,8 +97,11 @@ function ThemeToggle({ theme, onToggle, floating = false }: { theme: Theme; onTo
   );
 }
 function Login({ onLogin, theme, onToggleTheme }: { onLogin: (u: User) => void; theme: Theme; onToggleTheme: () => void }) {
-  const [email, setEmail] = useState("admin@example.com");
+  const rememberedEmail = localStorage.getItem("golive_login_email") ?? "";
+  const [email, setEmail] = useState(rememberedEmail);
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(rememberedEmail !== "");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [oidc, setOIDC] = useState(false);
   useEffect(() => {
@@ -118,12 +121,20 @@ function Login({ onLogin, theme, onToggleTheme }: { onLogin: (u: User) => void; 
           </div>
         )}
         <form
+          autoComplete="on"
           onSubmit={async (e) => {
             e.preventDefault();
+            setBusy(true);
+            setError("");
             try {
-              onLogin(await api.login(email, password));
+              const user = await api.login(email, password, remember);
+              if (remember) localStorage.setItem("golive_login_email", email);
+              else localStorage.removeItem("golive_login_email");
+              onLogin(user);
             } catch (x) {
               setError(x instanceof Error ? x.message : "Login failed");
+            } finally {
+              setBusy(false);
             }
           }}
         >
@@ -131,6 +142,8 @@ function Login({ onLogin, theme, onToggleTheme }: { onLogin: (u: User) => void; 
             Email
             <input
               type="email"
+              name="email"
+              autoComplete="username"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -140,12 +153,28 @@ function Login({ onLogin, theme, onToggleTheme }: { onLogin: (u: User) => void; 
             Password
             <input
               type="password"
+              name="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
-          <button className="primary">Sign in</button>
+          <label className="rememberLogin">
+            <input
+              type="checkbox"
+              name="remember"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            <span>
+              Remember me for 30 days
+              <small>Use only on a private device.</small>
+            </span>
+          </label>
+          <button className="primary" disabled={busy}>
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
         </form>
         {oidc && (
           <>

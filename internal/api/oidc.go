@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/TerminalAddict/golive-nms/internal/sso"
+	"github.com/TerminalAddict/golive-nms/internal/store"
 	"net/http"
 )
 
@@ -45,7 +46,7 @@ func (a *API) oidcCallback(w http.ResponseWriter, r *http.Request) {
 		problem(w, 500, e)
 		return
 	}
-	token, e := a.s.CreateSession(r.Context(), u.ID)
+	token, e := a.s.CreateSession(r.Context(), u.ID, store.DefaultSessionLifetime)
 	if e != nil {
 		problem(w, 500, e)
 		return

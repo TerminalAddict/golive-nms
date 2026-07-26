@@ -30,6 +30,11 @@ type APIToken struct {
 
 var ErrInvalidCredentials = errors.New("invalid email or password")
 
+const (
+	DefaultSessionLifetime    = 12 * time.Hour
+	RememberedSessionLifetime = 30 * 24 * time.Hour
+)
+
 func (s *Store) EnsureAdmin(ctx context.Context, email, password string) error {
 	if email == "" || password == "" {
 		return errors.New("administrator email and password are required")
@@ -48,7 +53,7 @@ func (s *Store) EnsureAdmin(ctx context.Context, email, password string) error {
 	_, err = s.Pool.Exec(ctx, `INSERT INTO users(email,display_name,password_hash,role) VALUES($1,'Administrator',$2,'administrator')`, strings.ToLower(strings.TrimSpace(email)), string(hash))
 	return err
 }
-func (s *Store) Login(ctx context.Context, email, password string) (User, string, error) {
+func (s *Store) Login(ctx context.Context, email, password string, sessionLifetime time.Duration) (User, string, error) {
 	var u User
 	var hash string
 	err := s.Pool.QueryRow(ctx, `SELECT id,email,display_name,role,password_hash FROM users WHERE email=$1 AND active`, strings.ToLower(strings.TrimSpace(email))).Scan(&u.ID, &u.Email, &u.DisplayName, &u.Role, &hash)
@@ -61,20 +66,23 @@ func (s *Store) Login(ctx context.Context, email, password string) (User, string
 	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) != nil {
 		return User{}, "", ErrInvalidCredentials
 	}
-	token, err := s.CreateSession(ctx, u.ID)
+	token, err := s.CreateSession(ctx, u.ID, sessionLifetime)
 	if err == nil {
 		_ = s.Audit(ctx, u.ID, "login", "session", "")
 	}
 	return u, token, err
 }
-func (s *Store) CreateSession(ctx context.Context, userID string) (string, error) {
+func (s *Store) CreateSession(ctx context.Context, userID string, lifetime time.Duration) (string, error) {
+	if lifetime <= 0 {
+		lifetime = DefaultSessionLifetime
+	}
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		return "", err
 	}
 	token := base64.RawURLEncoding.EncodeToString(raw)
 	sum := sha256.Sum256([]byte(token))
-	_, err := s.Pool.Exec(ctx, `INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')`, sum[:], userID)
+	_, err := s.Pool.Exec(ctx, `INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,$3)`, sum[:], userID, time.Now().Add(lifetime))
 	return token, err
 }
 func (s *Store) UpsertOIDCUser(ctx context.Context, email, name string) (User, error) {

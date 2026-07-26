@@ -158,10 +158,10 @@ export interface RemediationJob {
 export const api = {
   authConfig: () => request<{ oidcEnabled: boolean }>("/auth/config"),
   me: () => request<User>("/auth/me"),
-  login: (email: string, password: string) =>
+  login: (email: string, password: string, remember: boolean) =>
     request<User>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, remember }),
     }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   users: () => request<User[]>("/users"),

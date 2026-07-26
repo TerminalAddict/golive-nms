@@ -158,6 +158,8 @@
 }
 :root[data-theme="light"] .loginCard > p,
 :root[data-theme="light"] .login > p { color: var(--muted); }
+:root[data-theme="light"] .loginCard .rememberLogin span { color: #315549; }
+:root[data-theme="light"] .loginCard .rememberLogin small { color: var(--muted); }
 :root[data-theme="light"] .ssoButton { color: #244b3c; background: #edf4f0; border-color: #cadbd2; }
 
 @media(max-width:600px) {

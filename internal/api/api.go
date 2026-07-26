@@ -107,17 +107,38 @@ func (a *API) login(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Remember bool   `json:"remember"`
 	}
 	if !decode(w, r, &body) {
 		return
 	}
-	u, token, e := a.s.Login(r.Context(), body.Email, body.Password)
+	lifetime := store.DefaultSessionLifetime
+	if body.Remember {
+		lifetime = store.RememberedSessionLifetime
+	}
+	u, token, e := a.s.Login(r.Context(), body.Email, body.Password, lifetime)
 	if e != nil {
 		problem(w, http.StatusUnauthorized, e)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: "golive_session", Value: token, Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: 43200})
+	http.SetCookie(w, loginCookie(token, body.Remember))
 	jsonOut(w, 200, u)
+}
+
+func loginCookie(token string, remember bool) *http.Cookie {
+	cookie := &http.Cookie{
+		Name:     "golive_session",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	}
+	if remember {
+		cookie.MaxAge = int(store.RememberedSessionLifetime.Seconds())
+		cookie.Expires = time.Now().Add(store.RememberedSessionLifetime)
+	}
+	return cookie
 }
 func (a *API) logout(w http.ResponseWriter, r *http.Request) {
 	if c, e := r.Cookie("golive_session"); e == nil {
