@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en-NZ" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Features — GoLive NMS</title>
+  <meta name="description" content="Explore GoLive NMS monitoring, Monit integration, alerts, maps, Linux agents, remote collectors, RBAC, configuration history, events, remediation and backups.">
+  <meta name="theme-color" content="#07120e">
+  <link rel="canonical" href="https://www.golive.co.nz/features/">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <script src="/assets/theme-init.js"></script>
+  <link rel="stylesheet" href="/assets/site.css">
+  <script defer src="/assets/site.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><nav class="nav container" aria-label="Main navigation"><a class="brand" href="/" aria-label="GoLive NMS home"><img src="/assets/brand.svg" alt="GoLive NMS"></a><button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation"><span></span><span></span><span></span></button><div class="nav-links" id="nav-links"><a href="/#features">Overview</a><a href="/features/" aria-current="page">Features</a><a href="/install/">Install</a><a href="https://github.com/TerminalAddict/golive-nms">GitHub</a><button class="theme-toggle" type="button" aria-label="Switch colour theme" aria-pressed="false"><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="theme-label">Light</span></button><a class="button small" href="/install/#quick-start">Deploy GoLive</a></div></nav></header>
+
+  <main id="main">
+    <section class="page-hero"><div class="container"><p class="eyebrow">Complete feature catalogue</p><h1>Everything required to operate <span class="gradient-text">a real network.</span></h1><p class="lead">From a plain ICMP check to remote-site collectors, Monit service control and configuration change history—GoLive keeps the operational context together.</p><div class="page-meta"><span>Linux</span><span>MikroTik</span><span>SNMP v2c / v3</span><span>Monit</span><span>Docker Compose</span><span>AGPL-3.0</span></div></div></section>
+
+    <div class="container docs-layout">
+      <aside class="docs-nav" aria-label="Feature sections"><strong>On this page</strong><a href="#monitoring">Monitoring</a><a href="#agents">Agents & collectors</a><a href="#monit">Monit</a><a href="#incidents">Incidents & alerts</a><a href="#performance">Performance & events</a><a href="#maps">Maps & inventory</a><a href="#configuration">Configuration</a><a href="#remediation">Remediation</a><a href="#access">Access & security</a><a href="#operations">Operations</a></aside>
+      <article class="docs-content">
+        <section id="monitoring"><p class="eyebrow">Checks and protocols</p><h2>Monitor the thing, not just the address</h2><p>GoLive combines agentless polling, protocol-aware checks and agent telemetry. Checks are durably scheduled and produce retained availability and latency samples.</p><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">⌁</div><h3>Availability</h3><ul><li>ICMP ping with latency and loss</li><li>HTTP and HTTPS status checks</li><li>Arbitrary TCP port connectivity</li><li>DNS response checks</li><li>TLS certificate-expiry checks</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">↔</div><h3>Service-aware checks</h3><ul><li>SSH and SMTP banner validation</li><li>MariaDB and PostgreSQL port checks</li><li>RouterOS API and API-SSL</li><li>Custom service endpoints for web apps</li><li>Configurable polling intervals</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">◎</div><h3>SNMP and network devices</h3><ul><li>SNMP v2c and SNMP v3 polling</li><li>Encrypted credential storage</li><li>Standard SNMP devices and switches</li><li>MikroTik RouterOS checks</li><li>Central or site-local polling</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">↳</div><h3>Health semantics</h3><ul><li>Up, degraded, down and unknown states</li><li>Unmonitored services reduce health</li><li>Parent-child dependency suppression</li><li>One active incident per failure</li><li>Automatic recovery resolution</li></ul></article>
+        </div></section>
+
+        <section id="agents"><p class="eyebrow">Portable host visibility</p><h2>Static agents. Secure remote polling.</h2><p>The Linux agent and site collector are statically compiled Go binaries. They do not require Python, Node, Java or a shared-library runtime.</p><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">▣</div><h3>Linux inventory</h3><ul><li>Hostname, OS and package manager</li><li>Pending package updates</li><li>CPU, load and process count</li><li>Memory and swap usage</li><li>Root filesystem and uptime</li><li>Aggregate network counters</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">⇢</div><h3>Portable packaging</h3><ul><li>Linux amd64 and arm64</li><li>DEB, RPM and APK packages</li><li>Portable tar.gz archive</li><li>systemd and OpenRC services</li><li>Source-based distribution support</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">◇</div><h3>Secure enrollment</h3><ul><li>One-time 15-minute enrollment tokens</li><li>Private key generated on the host</li><li>CSR-based certificate issuance</li><li>Ongoing mutual TLS authentication</li><li>Identity revocation in the UI</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">⌂</div><h3>Remote site collectors</h3><ul><li>Outbound-only NMS connection</li><li>Assignments limited to one site</li><li>Checks private site address space</li><li>Central automatic failback</li><li>No inbound collector firewall port</li></ul></article>
+        </div></section>
+
+        <section id="monit"><p class="eyebrow">M/Monit-compatible reporting</p><h2>Make every Monit service visible—and actionable</h2><p>Point the existing <code>set mmonit</code> line at GoLive. Status snapshots and events create the host, import service inventory, refresh state and drive incidents.</p><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">M</div><h3>Collector compatibility</h3><ul><li>Monit v2 status and event XML</li><li>Gzip-compressed reports</li><li>Event queue interruption recovery</li><li>Complete M/Monit snapshots</li><li>Port-2812 XML status import</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">⚙</div><h3>All Monit object types</h3><ul><li>Systems and processes</li><li>Files, directories and filesystems</li><li>Remote hosts and network services</li><li>Programs and FIFOs</li><li>Monitored and unmonitored state</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">▶</div><h3>Remote service actions</h3><ul><li>Start, stop and restart</li><li>Monitor and unmonitor</li><li>Connection and credential testing</li><li>Immediate success/failure feedback</li><li>Recent action history</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">✓</div><h3>Operational workflow</h3><ul><li>Automatic device creation</li><li>Edit site, parent, type and tags</li><li>Sync after Monit config changes</li><li>Role- and site-scoped actions</li><li>Audited operator commands</li></ul></article>
+        </div></section>
+
+        <section id="incidents"><p class="eyebrow">From detection to recovery</p><h2>Incidents that tell the whole story</h2><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">!</div><h3>Fault lifecycle</h3><ul><li>Failure deduplication</li><li>Automatic incident opening</li><li>Operator acknowledgement</li><li>Ownership assignment and notes</li><li>Automatic recovery and repair time</li><li>Maintenance windows</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">✉</div><h3>Email</h3><ul><li>Multiple recipients per channel</li><li>STARTTLS and implicit TLS</li><li>Private plain-SMTP relay support</li><li>Configurable SMTP server</li><li>Encrypted password storage</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">#</div><h3>Slack and Teams</h3><ul><li>Incoming webhook delivery</li><li>Site-specific routing</li><li>Immediate failure messages</li><li>Optional recovery messages</li><li>Test delivery from the UI</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">↻</div><h3>Reminder policy</h3><ul><li>Configurable repeat interval</li><li>Only open, unacknowledged incidents repeat</li><li>Acknowledgement stops reminders</li><li>Recovery stops all future reminders</li><li>Per-channel event selection</li></ul></article>
+        </div></section>
+
+        <section id="performance"><p class="eyebrow">Telemetry and events</p><h2>History when you need evidence</h2><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">⌇</div><h3>Performance series</h3><ul><li>Availability and latency history</li><li>CPU, load and memory</li><li>Swap and filesystem usage</li><li>Network byte counters</li><li>Interactive time-series charts</li><li>VictoriaMetrics retention</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">≡</div><h3>Network events</h3><ul><li>TCP and UDP syslog ingestion</li><li>SNMP trap receiver</li><li>Site-scoped event visibility</li><li>Protocol and text filtering</li><li>VictoriaLogs storage</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">●</div><h3>Live UI</h3><ul><li>Server-sent event stream</li><li>Live dashboard health</li><li>Live incident updates</li><li>Prioritised degraded devices</li><li>Direct links into device workspaces</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">◔</div><h3>Visual reporting</h3><ul><li>Overall health ring</li><li>Status and distribution charts</li><li>Latency line charts</li><li>Device and service counts</li><li>Dark and light interface themes</li></ul></article>
+        </div></section>
+
+        <section id="maps"><p class="eyebrow">Context and navigation</p><h2>See location and dependency together</h2><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">⌘</div><h3>Dependency topology</h3><ul><li>Device parent relationships</li><li>Router-to-server hierarchy</li><li>Hypervisor-to-guest relationships</li><li>Failure state on topology nodes</li><li>Direct device navigation</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">⌖</div><h3>Geographic sites</h3><ul><li>Site latitude and longitude</li><li>OpenStreetMap site view</li><li>Location-aware inventory</li><li>Site routing for alerts</li><li>Scoped user site grants</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">▦</div><h3>Flexible inventory</h3><ul><li>Linux servers and network devices</li><li>MikroTik routers and switches</li><li>SNMP-capable equipment</li><li>Plain ping-only devices</li><li>Type, address, tags and site metadata</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">↗</div><h3>Focused workspaces</h3><ul><li>Full-page device detail</li><li>Editable identity and relationships</li><li>Checks and Monit services together</li><li>Remote-control setup and feedback</li><li>Action history beside the device</li></ul></article>
+        </div></section>
+
+        <section id="configuration"><p class="eyebrow">Configuration history</p><h2>Know what changed on the network</h2><p>GoLive can collect text configuration from managed devices over SSH, retain encrypted versions and show the exact difference.</p><div class="feature-catalog"><article class="catalog-card"><div class="feature-icon">⌘</div><h3>Secure capture</h3><ul><li>Host-key-pinned SSH</li><li>Encrypted network credentials</li><li>Configurable capture command</li><li>Scheduled and on-demand runs</li><li>Per-device version history</li></ul></article><article class="catalog-card"><div class="feature-icon">±</div><h3>Change awareness</h3><ul><li>Version-to-version diffs</li><li>Configuration change incidents</li><li>Capture status and errors</li><li>Auditable operator activity</li><li>Encrypted storage at rest</li></ul></article></div></section>
+
+        <section id="remediation"><p class="eyebrow">Controlled response</p><h2>Automate carefully, with the brakes fitted</h2><div class="feature-catalog"><article class="catalog-card"><div class="feature-icon">▶</div><h3>Allow-listed actions</h3><ul><li>Signed action templates</li><li>Manual operator execution</li><li>Optional automatic execution</li><li>Agent action polling and results</li><li>Durable job history</li></ul></article><article class="catalog-card"><div class="feature-icon">■</div><h3>Safety controls</h3><ul><li>Global kill switch</li><li>Per-action cooldowns</li><li>Execution leases</li><li>Cancellation and expiry states</li><li>Full audit trail</li></ul></article></div></section>
+
+        <section id="access"><p class="eyebrow">Identity and trust</p><h2>Access enforced at every boundary</h2><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">♙</div><h3>Users and roles</h3><ul><li>Administrator and manager</li><li>Site manager and viewer</li><li>Enforced site grants</li><li>Local password login</li><li>30-day remembered sessions</li><li>Optional OpenID Connect SSO</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">◆</div><h3>Credentials</h3><ul><li>Application-layer encrypted secrets</li><li>SNMP, RouterOS, SSH and Monit types</li><li>SMTP and webhook protection</li><li>Dedicated encryption key</li><li>Credential deletion cleanup</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">⌁</div><h3>Service identities</h3><ul><li>Scoped API tokens</li><li>Agent and collector certificates</li><li>Certificate revocation</li><li>Last-seen visibility</li><li>Mutation auditing</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">◈</div><h3>TLS choices</h3><ul><li>Automatic public certificates</li><li>Direct Caddy layout</li><li>Existing Apache or Nginx coexistence</li><li>Private Caddy CA for LANs</li><li>Separate web and collector ports</li></ul></article>
+        </div></section>
+
+        <section id="operations"><p class="eyebrow">Run it on your terms</p><h2>A complete, inspectable stack</h2><div class="feature-catalog">
+          <article class="catalog-card"><div class="feature-icon">⬡</div><h3>Docker Compose</h3><ul><li>Locally built app and admin images</li><li>Container health checks</li><li>PostgreSQL 17</li><li>VictoriaMetrics and VictoriaLogs</li><li>Caddy reverse proxy and TLS</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">⬇</div><h3>Backups and recovery</h3><ul><li>Scheduled encrypted archives</li><li>Database, metric and log backup</li><li>Configurable frequency and retention</li><li>Explicit restore operation</li><li>On-demand pre-upgrade backup</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">↥</div><h3>Safe upgrades</h3><ul><li>Project-scoped Compose commands</li><li>Additive startup migrations</li><li>Local source rebuild</li><li>Agent state retained across package updates</li><li>Version-tagged GitHub releases</li></ul></article>
+          <article class="catalog-card"><div class="feature-icon">∞</div><h3>Open source</h3><ul><li>AGPL-3.0 licensed</li><li>Source and Dockerfile inspectable</li><li>No prebuilt server image required</li><li>No shell-piped installer required</li><li>Own the database and retention policy</li></ul></article>
+        </div><div class="hero-actions"><a class="button" href="/install/">Install GoLive NMS</a><a class="button secondary" href="https://github.com/TerminalAddict/golive-nms">Browse the repository</a></div></section>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer"><div class="container"><div class="footer-grid"><div class="footer-about"><a class="footer-brand" href="/"><img src="/assets/brand.svg" alt="GoLive NMS"></a><p>Modern, self-hosted network operations for the servers, services and sites you are responsible for.</p></div><div class="footer-col"><h3>Project</h3><a href="/features/">Features</a><a href="/install/">Installation</a><a href="https://github.com/TerminalAddict/golive-nms/releases">Releases</a></div><div class="footer-col"><h3>Source</h3><a href="https://github.com/TerminalAddict/golive-nms">GitHub repository</a><a href="https://github.com/TerminalAddict/golive-nms/issues">Issues</a><a href="https://github.com/TerminalAddict/golive-nms/blob/main/LICENSE">AGPL-3.0 license</a></div></div><div class="footer-bottom">GoLive NMS is open-source software.<span>© <span data-year>2026</span> GoLive NMS</span></div></div></footer>
+</body>
+</html>

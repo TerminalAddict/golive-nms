@@ -2,6 +2,8 @@
 
 GoLive NMS is a modern, self-hosted network management server with site-scoped inventory, service/SNMP/RouterOS monitoring, latency and host metrics, dependency-aware incidents, Monit, encrypted credentials, alerts, maps, syslog/traps, configuration versions, local/OIDC authentication, mTLS collectors, and portable Linux agents.
 
+Project website: [golive.co.nz](https://www.golive.co.nz/)
+
 For a complete deployment and firewall walkthrough, see [INSTALL.md](INSTALL.md).
 
 ## Quick start
@@ -146,6 +148,13 @@ npm ci
 npm run check
 npm test
 npm run build
+```
+
+The static marketing and installation website lives in [`website/`](website/).
+Preview it from the repository root with any static web server, for example:
+
+```sh
+php -S 127.0.0.1:8765 -t website
 ```
 
 ## Implemented and upcoming

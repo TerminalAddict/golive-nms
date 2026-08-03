@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en-NZ" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Installation guide — GoLive NMS</title>
+<meta name="description" content="Install GoLive NMS with Docker Compose, TLS, firewalls, Linux agents, collectors, Monit, backups and safe upgrades.">
+<meta name="theme-color" content="#07120e"><link rel="canonical" href="https://www.golive.co.nz/install/">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><script src="/assets/theme-init.js"></script><link rel="stylesheet" href="/assets/site.css"><script defer src="/assets/site.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><nav class="nav container" aria-label="Main navigation"><a class="brand" href="/"><img src="/assets/brand.svg" alt="GoLive NMS"></a><button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation"><span></span><span></span><span></span></button><div class="nav-links" id="nav-links"><a href="/#features">Overview</a><a href="/features/">Features</a><a href="/install/" aria-current="page">Install</a><a href="https://github.com/TerminalAddict/golive-nms">GitHub</a><button class="theme-toggle" type="button" aria-label="Switch colour theme" aria-pressed="false"><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="theme-label">Light</span></button><a class="button small" href="#quick-start">Start installation</a></div></nav></header>
+<main id="main">
+<section class="page-hero"><div class="container"><p class="eyebrow">Installation guide</p><h1>From an empty Docker host to a <span class="gradient-text">working NMS.</span></h1><p class="lead">Every command is explicit and inspectable. Server, TLS, firewall, agent, collector, Monit, backup and upgrade procedures are all here.</p><div class="page-meta"><span>Docker Compose</span><span>Git clone</span><span>No install script</span><span>No prebuilt server image</span></div></div></section>
+<div class="container docs-layout">
+<aside class="docs-nav" aria-label="Installation sections"><strong>On this page</strong><a href="#requirements">Requirements</a><a href="#quick-start">Quick start</a><a href="#tls">TLS</a><a href="#environment">Environment</a><a href="#firewall">Firewall</a><a href="#start">Start</a><a href="#initial">Initial setup</a><a href="#agent">Linux agent</a><a href="#collector">Collector</a><a href="#monit">Monit</a><a href="#communications">Communications</a><a href="#backup">Backup</a><a href="#upgrade">Upgrade</a><a href="#troubleshooting">Troubleshoot</a></aside>
+<article class="docs-content">
+
+<section id="requirements"><p class="eyebrow">Before you begin</p><h2>Requirements and decisions</h2><p>Use a Linux host with a current Docker Engine, Docker Compose plugin, Git and enough persistent storage for your retention period. Choose a DNS name such as <code>nms.example.com</code>, then decide whether Caddy owns public ports 80/443, coexists with Apache or Nginx, or uses a private CA.</p>
+<div class="code-block"><div class="code-label">confirm tools</div><pre>git --version
+docker --version
+docker compose version
+openssl version</pre></div>
+<div class="callout"><strong>Your data stays on your host:</strong> PostgreSQL, metrics, logs, certificates and backups use named Docker volumes. Plan off-host copies of encrypted backups.</div></section>
+
+<section id="quick-start"><p class="eyebrow">Server installation</p><h2>Clone and prepare the source</h2>
+<div class="step"><div class="step-number">01</div><div class="step-body"><h3>Clone</h3><div class="code-block"><div class="code-label">shell</div><pre>sudo mkdir -p /opt/golive-nms
+sudo chown "$USER":"$USER" /opt/golive-nms
+git clone https://github.com/TerminalAddict/golive-nms.git /opt/golive-nms
+cd /opt/golive-nms</pre></div></div></div>
+<div class="step"><div class="step-number">02</div><div class="step-body"><h3>Create private configuration</h3><div class="code-block"><div class="code-label">shell</div><pre>cp .env.example .env
+chmod 600 .env
+nano .env</pre></div></div></div>
+<div class="step"><div class="step-number">03</div><div class="step-body"><h3>Select exactly one TLS override</h3><p>Use the tabs below, then copy the matching supplied file to <code>compose.override.yml</code>.</p></div></div>
+<div class="step"><div class="step-number">04</div><div class="step-body"><h3>Inspect before running</h3><div class="code-block"><div class="code-label">shell</div><pre>docker compose config
+docker compose config -q</pre></div></div></div>
+<div class="callout"><strong>No opaque installer:</strong> GoLive uses ordinary Git, editor and Compose commands. The application and backup images build locally from source.</div></section>
+
+<section id="tls"><p class="eyebrow">HTTPS</p><h2>Choose a TLS layout</h2>
+<div class="tabs" data-tabs><div class="tab-list" role="tablist"><button role="tab" aria-selected="true" aria-controls="direct">Direct Caddy</button><button role="tab" aria-selected="false" aria-controls="apache">Apache</button><button role="tab" aria-selected="false" aria-controls="nginx">Nginx</button><button role="tab" aria-selected="false" aria-controls="internal">Private / LAN</button></div>
+<div class="tab-panel" id="direct" role="tabpanel"><h3>Caddy owns public 80 and 443</h3><div class="code-block"><div class="code-label">.env and shell</div><pre>GOLIVE_DOMAIN=nms.example.com
+GOLIVE_WEB_PORT=443
+cp deploy/compose.direct.yml compose.override.yml</pre></div><p>Public DNS must point to this host. Ensure no other process owns ports 80 or 443.</p></div>
+<div class="tab-panel" id="apache" role="tabpanel" hidden><h3>Existing Apache keeps port 80</h3><div class="code-block"><div class="code-label">prepare</div><pre>GOLIVE_DOMAIN=nms.example.com
+GOLIVE_WEB_PORT=8443
+GOLIVE_ACME_PORT=18080
+cp deploy/compose.apache.yml compose.override.yml
+cp deploy/apache-golive-acme.conf deploy/apache-golive-acme.generated.conf
+nano deploy/apache-golive-acme.generated.conf</pre></div><p>Replace <code>@GOLIVE_DOMAIN@</code> and <code>@ACME_PORT@</code>, review, then install:</p><div class="code-block"><div class="code-label">Debian / Ubuntu</div><pre>sudo install -m 0644 deploy/apache-golive-acme.generated.conf   /etc/apache2/sites-available/golive-acme.conf
+sudo a2enmod proxy proxy_http
+sudo a2ensite golive-acme.conf
+sudo apachectl configtest
+sudo systemctl reload apache2</pre></div></div>
+<div class="tab-panel" id="nginx" role="tabpanel" hidden><h3>Existing Nginx keeps port 80</h3><div class="code-block"><div class="code-label">prepare</div><pre>GOLIVE_DOMAIN=nms.example.com
+GOLIVE_WEB_PORT=8443
+GOLIVE_ACME_PORT=18080
+cp deploy/compose.nginx.yml compose.override.yml
+cp deploy/nginx-golive-acme.conf deploy/nginx-golive-acme.generated.conf
+nano deploy/nginx-golive-acme.generated.conf</pre></div><p>Replace the domain, ACME port and web port placeholders, then install:</p><div class="code-block"><div class="code-label">Debian / Ubuntu</div><pre>sudo install -m 0644 deploy/nginx-golive-acme.generated.conf   /etc/nginx/sites-available/golive-acme.conf
+sudo ln -s /etc/nginx/sites-available/golive-acme.conf   /etc/nginx/sites-enabled/golive-acme.conf
+sudo nginx -t
+sudo systemctl reload nginx</pre></div></div>
+<div class="tab-panel" id="internal" role="tabpanel" hidden><h3>Private or LAN-only TLS</h3><div class="code-block"><div class="code-label">prepare</div><pre>GOLIVE_DOMAIN=nms.internal.example
+GOLIVE_WEB_PORT=8443
+cp deploy/compose.internal.yml compose.override.yml</pre></div><p>After startup, export and trust Caddy's root on browsers and enrolling hosts:</p><div class="code-block"><div class="code-label">shell</div><pre>docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt   ./golive-caddy-root.crt
+sudo cp ./golive-caddy-root.crt   /usr/local/share/ca-certificates/golive-caddy-root.crt
+sudo update-ca-certificates</pre></div></div></div></section>
+
+<section id="environment"><p class="eyebrow">Secrets and settings</p><h2>Configure <code>.env</code></h2><p>Replace every <code>change-me</code> value with an independent secret.</p><div class="code-block"><div class="code-label">minimum .env</div><pre>GOLIVE_DOMAIN=nms.example.com
+GOLIVE_WEB_PORT=443
+GOLIVE_COLLECTOR_PORT=9443
+POSTGRES_PASSWORD=use-a-long-random-password
+GOLIVE_ENCRYPTION_KEY=use-an-independent-random-32-byte-value
+GOLIVE_ADMIN_EMAIL=admin@example.com
+GOLIVE_ADMIN_PASSWORD=use-a-different-long-password
+GOLIVE_AGENT_TOKEN=use-a-long-random-emergency-token
+GOLIVE_MONIT_USERNAME=monit
+GOLIVE_MONIT_PASSWORD=use-a-long-random-monit-password
+GOLIVE_BACKUP_PASSPHRASE=use-a-long-random-backup-passphrase
+GOLIVE_SYSLOG_PORT=5514
+GOLIVE_TRAP_PORT=1162
+GOLIVE_BACKUP_INTERVAL=24h
+GOLIVE_BACKUP_KEEP=10
+GOLIVE_RETENTION_DAYS=395</pre></div>
+<div class="code-block"><div class="code-label">generate secrets</div><pre>openssl rand -hex 24
+openssl rand -base64 32</pre></div>
+<div class="callout warning"><strong>Back up both:</strong> the encryption key unlocks stored credentials and the internal CA; the backup passphrase decrypts archives. Losing either is not recoverable.</div>
+<h3>Optional OIDC SSO</h3><div class="code-block"><div class="code-label">.env</div><pre>GOLIVE_OIDC_ISSUER=https://identity.example.com
+GOLIVE_OIDC_CLIENT_ID=golive-nms
+GOLIVE_OIDC_CLIENT_SECRET=replace-with-client-secret
+GOLIVE_OIDC_REDIRECT_URL=https://nms.example.com/api/v1/auth/oidc/callback</pre></div></section>
+
+<section id="firewall"><p class="eyebrow">Server network access</p><h2>Open only what you use</h2>
+<div class="table-wrap"><table><thead><tr><th>Purpose</th><th>Port</th><th>Required</th></tr></thead><tbody><tr><td>UI and enrollment</td><td>443 or 8443 TCP/HTTPS</td><td>Yes</td></tr><tr><td>Public ACME</td><td>80 TCP</td><td>Public TLS</td></tr><tr><td>Agents, collectors, Monit</td><td>9443 TCP/HTTPS</td><td>When used</td></tr><tr><td>Syslog</td><td>5514 TCP/UDP</td><td>Optional</td></tr><tr><td>SNMP traps</td><td>1162 UDP</td><td>Optional</td></tr></tbody></table></div>
+<div class="code-block"><div class="code-label">UFW</div><pre>sudo ufw allow 8443/tcp comment 'GoLive web and enrollment'
+sudo ufw allow 9443/tcp comment 'GoLive agents collectors and Monit'
+# Optional receivers
+sudo ufw allow 5514/tcp
+sudo ufw allow 5514/udp
+sudo ufw allow 1162/udp</pre></div>
+<div class="code-block"><div class="code-label">firewalld</div><pre>sudo firewall-cmd --permanent --add-port=8443/tcp
+sudo firewall-cmd --permanent --add-port=9443/tcp
+sudo firewall-cmd --reload</pre></div>
+<div class="callout"><strong>Prefer source restrictions.</strong> Never expose PostgreSQL 5432, VictoriaMetrics 8428, VictoriaLogs 9428 or internal app port 8080.</div></section>
+
+<section id="start"><p class="eyebrow">First start</p><h2>Build and verify</h2><div class="code-block"><div class="code-label">shell</div><pre>cd /opt/golive-nms
+docker compose config -q
+docker compose up -d --build --wait
+docker compose ps</pre></div><p>Inspect failures with:</p><div class="code-block"><div class="code-label">shell</div><pre>docker compose logs --tail=200 app
+docker compose logs --tail=200 caddy
+docker compose logs --tail=200 postgres</pre></div>
+<h3>Deliberately reset a failed first install</h3><div class="callout danger"><strong>Destructive:</strong> removes this project's database, metrics, logs, certificates and backups.</div><div class="code-block"><div class="code-label">shell</div><pre>docker compose down -v --remove-orphans
+docker compose config
+docker compose up -d --build --wait</pre></div></section>
+
+<section id="initial"><p class="eyebrow">First login</p><h2>Establish your operating model</h2><p>Open the configured HTTPS URL and sign in with <code>GOLIVE_ADMIN_EMAIL</code> and <code>GOLIVE_ADMIN_PASSWORD</code>.</p><ol><li>Create sites and locations.</li><li>Create managers, site managers and viewers; assign site grants.</li><li>Add encrypted SNMP, RouterOS, SSH or Monit credentials.</li><li>Create email, Slack and Teams alert channels.</li><li>Send a test through every channel.</li><li>Add devices, parent relationships and checks.</li><li>Create maintenance windows for scheduled outages.</li></ol><div class="callout"><strong>Remember me:</strong> the 30-day option creates a secure persistent session. The browser password manager stores passwords; GoLive does not place them in browser storage.</div></section>
+
+<section id="agent"><p class="eyebrow">Remote Linux hosts</p><h2>Install the static Linux agent</h2><p>No runtime dependencies and no inbound agent port. In <strong>Settings → Agents and collectors</strong>, choose <strong>Linux agent</strong>, select its site and generate a one-use, 15-minute enrollment token.</p>
+<div class="callout"><strong>Two URLs:</strong> enrollment uses the management URL; ongoing mTLS reporting uses port 9443. The private key is generated locally.</div>
+<div class="tabs" data-tabs><div class="tab-list" role="tablist"><button role="tab" aria-selected="true" aria-controls="deb">DEB</button><button role="tab" aria-selected="false" aria-controls="rpm">RPM</button><button role="tab" aria-selected="false" aria-controls="apk">APK</button><button role="tab" aria-selected="false" aria-controls="tar">Tarball</button></div>
+<div class="tab-panel" id="deb" role="tabpanel"><div class="code-block"><div class="code-label">Debian / Ubuntu</div><pre>uname -m
+wget https://github.com/TerminalAddict/golive-nms/releases/download/VERSION/golive-agent_VERSION_linux_amd64.deb
+sudo dpkg -i ./golive-agent_VERSION_linux_amd64.deb
+sudoedit /etc/golive-agent.env</pre></div></div>
+<div class="tab-panel" id="rpm" role="tabpanel" hidden><div class="code-block"><div class="code-label">RPM / DNF</div><pre>sudo dnf install ./golive-agent_VERSION_linux_amd64.rpm
+# or: sudo rpm -Uvh ./golive-agent_VERSION_linux_amd64.rpm
+sudoedit /etc/golive-agent.env</pre></div></div>
+<div class="tab-panel" id="apk" role="tabpanel" hidden><div class="code-block"><div class="code-label">Alpine</div><pre>sudo apk add --allow-untrusted ./golive-agent_VERSION_linux_amd64.apk
+sudo vi /etc/golive-agent.env</pre></div></div>
+<div class="tab-panel" id="tar" role="tabpanel" hidden><div class="code-block"><div class="code-label">portable</div><pre>tar -xzf golive-agent_VERSION_linux_amd64.tar.gz
+cd golive-agent_VERSION_linux_amd64
+sudo install -m 0755 golive-agent /usr/bin/golive-agent
+sudo install -d -m 0700 /var/lib/golive-agent
+sudo install -m 0600 golive-agent.env.example /etc/golive-agent.env
+sudo install -m 0644 deploy/golive-agent.service /etc/systemd/system/
+sudoedit /etc/golive-agent.env</pre></div></div></div>
+<div class="code-block"><div class="code-label">/etc/golive-agent.env</div><pre>GOLIVE_SERVER=https://nms.example.com:9443
+GOLIVE_ENROLL_URL=https://nms.example.com
+GOLIVE_ENROLLMENT_TOKEN=PASTE_THE_ONE_TIME_TOKEN</pre></div>
+<div class="code-block"><div class="code-label">systemd</div><pre>sudo systemctl daemon-reload
+sudo systemctl enable --now golive-agent
+sudo journalctl -u golive-agent -f</pre></div>
+<div class="code-block"><div class="code-label">OpenRC</div><pre>sudo rc-update add golive-agent default
+sudo rc-service golive-agent start
+tail -f /var/log/golive-agent.log</pre></div>
+<p>After enrollment, remove the enrollment URL and token, leaving only <code>GOLIVE_SERVER</code>, then restart.</p></section>
+
+<section id="collector"><p class="eyebrow">Remote sites</p><h2>Install a site collector</h2><p>A collector connects outbound to GoLive and polls its site's private targets. It opens no inbound port.</p><ol><li>Choose <strong>Remote site collector</strong> in Settings.</li><li>Assign the site and generate a token.</li><li>Install the matching <code>golive-collector</code> package or tarball.</li><li>Configure server, enrollment URL and token as above.</li><li>Start it, check its journal, then remove enrollment values.</li></ol><div class="code-block"><div class="code-label">collector host</div><pre>sudoedit /etc/golive-collector.env
+sudo systemctl enable --now golive-collector
+sudo journalctl -u golive-collector -f</pre></div><p>Central polling automatically resumes if the collector is unavailable or revoked.</p></section>
+
+<section id="monit"><p class="eyebrow">Monit integration</p><h2>Send all Monit services to GoLive</h2><div class="code-block"><div class="code-label">monitrc</div><pre>set eventqueue
+    basedir /var/lib/monit/events
+    slots 1000
+set mmonit https://monit:YOUR_MONIT_PASSWORD@nms.example.com:9443/collector
+    with timeout 15 seconds
+    and register without credentials</pre></div><div class="code-block"><div class="code-label">validate</div><pre>sudo monit -t
+sudo monit reload
+sudo monit status</pre></div>
+<h3>Optional remote actions</h3><div class="code-block"><div class="code-label">monitrc</div><pre>set httpd port 2812 and
+    allow golive:LONG_UNIQUE_PASSWORD
+    allow localhost</pre></div><div class="code-block"><div class="code-label">restrict on Monit host</div><pre>sudo ufw allow proto tcp from 203.0.113.10 to any port 2812   comment 'GoLive Monit control'
+sudo monit -t
+sudo systemctl reload monit</pre></div>
+<div class="callout warning"><strong>Never expose 2812 publicly.</strong> Use a private network/VPN, or HTTPS with a certificate GoLive trusts.</div>
+<ol><li>Create a Monit remote-control credential in <strong>Settings → Network credentials</strong>.</li><li>Open the device and enter <code>http://host:2812</code>.</li><li>Select the credential, save, then use <strong>Test & sync services</strong>.</li><li>Use audited start, stop, restart, monitor and unmonitor controls.</li></ol></section>
+
+<section id="communications"><p class="eyebrow">Complete firewall matrix</p><h2>Every communication</h2><div class="table-wrap"><table><thead><tr><th>Source → destination</th><th>Port</th><th>Purpose</th></tr></thead><tbody>
+<tr><td>Browser → NMS</td><td>Web HTTPS</td><td>UI, API, enrollment</td></tr><tr><td>Agent / collector → NMS</td><td>Web HTTPS</td><td>One-time CSR</td></tr><tr><td>Agent / collector / Monit → NMS</td><td>9443 TCP</td><td>Reports and assignments</td></tr><tr><td>NMS → Monit</td><td>2812 TCP</td><td>Optional actions</td></tr><tr><td>Devices → NMS</td><td>5514 TCP/UDP; 1162 UDP</td><td>Syslog and traps</td></tr><tr><td>NMS / collector → targets</td><td>ICMP / configured TCP</td><td>Checks</td></tr><tr><td>NMS / collector → SNMP</td><td>161 UDP</td><td>Polling</td></tr><tr><td>NMS / collector → MikroTik</td><td>8728 / 8729 TCP</td><td>RouterOS</td></tr><tr><td>NMS → managed device</td><td>22 TCP</td><td>Config capture</td></tr><tr><td>NMS → SMTP</td><td>25 / 465 / 587 TCP</td><td>Email</td></tr><tr><td>NMS → webhooks / OIDC</td><td>443 TCP</td><td>Alerts and SSO</td></tr><tr><td>Hosts → DNS / NTP</td><td>53 / 123</td><td>Names and time</td></tr>
+</tbody></table></div><p>Agents and collectors do not listen for NMS connections. A site collector—not the central server—needs access to that site's targets.</p></section>
+
+<section id="backup"><p class="eyebrow">Protect your history</p><h2>Back up and restore</h2><div class="code-block"><div class="code-label">backup now</div><pre>cd /opt/golive-nms
+docker compose run --rm backup backup</pre></div><div class="code-block"><div class="code-label">restore</div><pre>docker compose stop app victoriametrics victorialogs
+docker compose run --rm backup restore /backups/golive-YYYYMMDDTHHMMSSZ.tar.age
+docker compose up -d --wait</pre></div><div class="callout">Copy encrypted archives off-host and test restoration periodically.</div></section>
+
+<section id="upgrade"><p class="eyebrow">Safe maintenance</p><h2>Upgrade only this project</h2><div class="code-block"><div class="code-label">NMS server</div><pre>cd /opt/golive-nms
+docker compose run --rm backup backup
+git pull --ff-only
+docker compose up -d --build --wait
+docker image prune
+docker compose ps</pre></div><p>Never stop every container on a shared host. Migrations run at startup. Agent package upgrades retain state and do not require reenrollment.</p></section>
+
+<section id="troubleshooting"><p class="eyebrow">Diagnostics</p><h2>Troubleshooting checklist</h2><ol><li>Check DNS from the affected host.</li><li>Synchronize clocks.</li><li>Distinguish enrollment web port from collector port 9443.</li><li>Use an unused token under 15 minutes old.</li><li>Confirm certificate trust.</li><li>Inspect Compose service status and logs.</li><li>Inspect agent or collector journals.</li><li>Check NAT and both firewalls.</li><li>Confirm the identity is not revoked.</li><li>Test direct target reachability from the polling host.</li></ol>
+<div class="code-block"><div class="code-label">reachability</div><pre>getent hosts nms.example.com
+curl -v https://nms.example.com/
+openssl s_client -connect nms.example.com:9443   -servername nms.example.com &lt;/dev/null</pre></div>
+<div class="hero-actions"><a class="button" href="https://github.com/TerminalAddict/golive-nms/issues">Open an issue</a><a class="button secondary" href="https://github.com/TerminalAddict/golive-nms/blob/main/INSTALL.md">Repository guide</a></div></section>
+
+</article></div></main>
+<footer class="site-footer"><div class="container"><div class="footer-grid"><div class="footer-about"><a class="footer-brand" href="/"><img src="/assets/brand.svg" alt="GoLive NMS"></a><p>Modern, self-hosted network operations for the systems you are responsible for.</p></div><div class="footer-col"><h3>Project</h3><a href="/features/">Features</a><a href="/install/">Installation</a><a href="https://github.com/TerminalAddict/golive-nms/releases">Releases</a></div><div class="footer-col"><h3>Source</h3><a href="https://github.com/TerminalAddict/golive-nms">GitHub</a><a href="https://github.com/TerminalAddict/golive-nms/issues">Issues</a><a href="https://github.com/TerminalAddict/golive-nms/blob/main/LICENSE">AGPL-3.0</a></div></div><div class="footer-bottom">GoLive NMS is open-source software.<span>© <span data-year>2026</span> GoLive NMS</span></div></div></footer>
+</body></html>

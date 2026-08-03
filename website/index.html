@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en-NZ" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GoLive NMS — Know what is up. Understand what is not.</title>
+  <meta name="description" content="GoLive NMS is a modern, self-hosted network management platform for Linux, MikroTik, SNMP, Monit, service checks, alerts, maps, configuration history and remote sites.">
+  <meta name="theme-color" content="#07120e">
+  <meta property="og:title" content="GoLive NMS — Modern self-hosted network monitoring">
+  <meta property="og:description" content="One calm view of every server, router, service and site you operate.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.golive.co.nz/">
+  <link rel="canonical" href="https://www.golive.co.nz/">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <script src="/assets/theme-init.js"></script>
+  <link rel="stylesheet" href="/assets/site.css">
+  <script defer src="/assets/site.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="GoLive NMS home"><img src="/assets/brand.svg" alt="GoLive NMS"></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="nav-links">
+        <a href="/#features">Overview</a>
+        <a href="/features/">Features</a>
+        <a href="/install/">Install</a>
+        <a href="https://github.com/TerminalAddict/golive-nms">GitHub</a>
+        <button class="theme-toggle" type="button" aria-label="Switch colour theme" aria-pressed="false"><svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="theme-label">Light</span></button>
+        <a class="button small" href="/install/#quick-start">Deploy GoLive
+          <svg class="arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 6l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="container">
+        <div class="hero-copy">
+          <p class="eyebrow">Open source network operations</p>
+          <h1>Know what is up.<br><span class="gradient-text">Understand what is not.</span></h1>
+          <p class="lead">GoLive brings servers, routers, switches, services and remote sites into one calm, dependency-aware view—without giving your infrastructure data to someone else.</p>
+          <div class="hero-actions">
+            <a class="button" href="/install/">Read the installation guide
+              <svg class="arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 6l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="button secondary" href="https://github.com/TerminalAddict/golive-nms">Explore the source</a>
+          </div>
+          <div class="hero-note" aria-label="Project highlights">
+            <span><i></i>Self-hosted with Docker Compose</span>
+            <span><i></i>Portable static Linux agent</span>
+            <span><i></i>AGPL-3.0 open source</span>
+          </div>
+        </div>
+
+        <div class="product-stage" aria-label="GoLive dashboard preview">
+          <div class="product-window">
+            <div class="window-bar"><i></i><i></i><i></i><span class="window-url">nms.example.com</span></div>
+            <div class="app-shell">
+              <aside class="app-sidebar">
+                <div class="app-brand"><span>⌁</span> GoLive</div>
+                <div class="app-nav"><div class="active">Overview</div><div>Devices</div><div>Incidents</div><div>Performance</div><div>Maps</div><div>Events</div><div>Configuration</div><div>Settings</div></div>
+              </aside>
+              <div class="app-main">
+                <div class="app-topbar"><div><small>NETWORK OPERATIONS</small><b>Overview</b></div><span class="live-pill"><i></i> Live updates</span></div>
+                <div class="app-content">
+                  <div class="health-card">
+                    <div><small>Overall network health</small><h3>Your network is operational</h3><p>48 of 50 devices are healthy across 4 sites.</p></div>
+                    <div class="health-ring"><div><strong>96%</strong><span>HEALTHY</span></div></div>
+                  </div>
+                  <div class="mini-stats"><div class="mini-stat"><b>50</b><span>Monitored devices</span></div><div class="mini-stat"><b>184</b><span>Active services</span></div><div class="mini-stat"><b>2</b><span>Need attention</span></div><div class="mini-stat"><b>23 ms</b><span>Median latency</span></div></div>
+                  <div class="app-grid">
+                    <div class="mini-panel"><div class="mini-title">Device health</div><div class="device-line"><span class="device-dot"></span><div><b>core-router-01</b><small>Head office · RouterOS</small></div><span class="state warn">Degraded</span></div><div class="device-line"><span class="device-dot"></span><div><b>virtual-host-02</b><small>Datacentre · Linux</small></div><span class="state">Healthy</span></div><div class="device-line"><span class="device-dot"></span><div><b>branch-switch-01</b><small>North branch · SNMP</small></div><span class="state">Healthy</span></div></div>
+                    <div class="mini-panel"><div class="mini-title">Latency · last 24 hours</div><div class="chart"><svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,70 15,67 30,72 45,55 60,62 75,58 90,65 105,42 120,50 135,48 150,53 165,38 180,42 195,31 210,47 225,39 240,45 255,26 270,34 285,29 300,32"/></svg></div><div class="chart-label">Live health and performance series</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="proof-strip" aria-label="At a glance">
+      <div class="proof-items container"><div><strong>4</strong><span>purpose-built access roles</span></div><div><strong>10+</strong><span>monitoring protocols and checks</span></div><div><strong>3</strong><span>alert delivery channels</span></div><div><strong>100%</strong><span>infrastructure under your control</span></div></div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-head"><div><p class="eyebrow">One operational picture</p><h2>Less noise. More context.<br>Faster answers.</h2></div><p class="section-copy">GoLive connects availability, latency, dependencies, service state and configuration changes so the dashboard tells you what needs attention—not merely what responded to a ping.</p></div>
+        <div class="feature-grid">
+          <article class="feature-card wide"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V9m6 9V5m6 13v-7m4 7H2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><h3>Real-time health and performance</h3><p>Ping loss and latency, HTTP and TCP services, host CPU, memory, disk, network counters and uptime—retained as interactive historical series.</p><span class="tag">VictoriaMetrics · live events</span></article>
+          <article class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v3l-2 3h18l-2-3v-3a7 7 0 0 0-7-7Zm-2 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Alerts that close the loop</h3><p>Email, Slack and Teams notifications for failures and recoveries, with site routing, acknowledgement and configurable reminders.</p><span class="tag">SMTP · webhooks</span></article>
+          <article class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v5m0 6v5M4 12h5m6 0h5M9 9 5.5 5.5M15 15l3.5 3.5M15 9l3.5-3.5M9 15l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><h3>Dependency-aware incidents</h3><p>Model routers, hypervisors, servers and child services. Upstream failure suppresses the cascade while preserving the root cause.</p><span class="tag">topology · parent relationships</span></article>
+          <article class="feature-card wide"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5zM8 9h8M8 12h5M8 15h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><h3>First-class Monit integration</h3><p>Use <code>set mmonit</code> to send full service inventory and state. From GoLive, securely start, stop, restart, monitor or unmonitor services through Monit's HTTP interface.</p><span class="tag">collector XML · remote control</span></article>
+          <article class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 9 6l3 7 3-5 5 10M3 20h18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Maps for people and networks</h3><p>Interactive dependency topology plus geographic OpenStreetMap views for locations, sites and the devices inside them.</p><span class="tag">topology · geo sites</span></article>
+          <article class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.3 8 8 9 4.7-1 8-4 8-9V7l-8-4Zm-3 9 2 2 4-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h3>Scoped access and secrets</h3><p>Administrator, manager, site-manager and viewer roles; site grants, OIDC SSO, encrypted credentials, hashed sessions and audit history.</p><span class="tag">RBAC · OIDC · encryption</span></article>
+        </div>
+        <div class="hero-actions"><a class="button secondary" href="/features/">See the complete feature catalogue
+          <svg class="arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 6l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>
+      </div>
+    </section>
+
+    <section class="section" style="background:rgba(8,24,17,.46)">
+      <div class="container split">
+        <div><p class="eyebrow">Transparent deployment</p><h2>Inspect it. Configure it. Run it.</h2><p class="section-copy">No curl-to-shell installer and no hidden application image. Clone the source, review the Dockerfile and Compose stack, set your own secrets, then build on your server.</p><ul class="check-list"><li>PostgreSQL for durable operational data</li><li>VictoriaMetrics and VictoriaLogs for efficient history</li><li>Caddy TLS with direct, Apache, Nginx and private-LAN layouts</li><li>Encrypted scheduled backups with explicit restore commands</li></ul></div>
+        <div class="code-window"><div class="code-title">terminal · /opt</div><pre><span class="command">git clone</span> https://github.com/TerminalAddict/golive-nms.git
+<span class="command">cd</span> golive-nms
+
+<span class="comment"># Create and review local configuration</span>
+<span class="command">cp</span> .env.example .env
+<span class="command">chmod</span> 600 .env
+<span class="command">nano</span> .env
+
+<span class="comment"># Let Caddy own public 80/443</span>
+<span class="command">cp</span> deploy/compose.direct.yml compose.override.yml
+
+<span class="comment"># Validate, build and start</span>
+<span class="command">docker compose</span> config -q
+<span class="command">docker compose</span> up -d --build --wait</pre></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head"><div><p class="eyebrow">Reach every site</p><h2>Central control.<br>Local reach.</h2></div><p class="section-copy">Run the NMS centrally, then place a certificate-authenticated collector wherever private address space or firewalls require local polling.</p></div>
+        <div class="architecture">
+          <article class="arch-node"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v10H4zM8 5h8M8 13h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><h3>GoLive NMS</h3><p>Inventory, policy, metrics, incidents, alerting and operator UI in your central Docker stack.</p></article>
+          <article class="arch-node"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h14M7 15V8h10v7M10 5h4M12 8v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div><h3>Site collector</h3><p>Pulls only its site's assignments over mTLS, executes checks locally, and returns results outbound.</p></article>
+          <article class="arch-node"><div class="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="6" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.5 10.5 7-3M8.5 13.5l7 3" stroke="currentColor" stroke-width="1.8"/></svg></div><h3>Devices and agents</h3><p>Linux, MikroTik, SNMP devices, web services, databases, mail systems and anything with an address.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="background:rgba(8,24,17,.46)">
+      <div class="container split">
+        <div class="code-window"><div class="code-title">monitrc</div><pre><span class="comment"># Queue reports during a network interruption</span>
+set eventqueue
+    basedir /var/lib/monit/events
+    slots 1000
+
+<span class="comment"># Send service state to GoLive</span>
+set mmonit https://monit:<span class="value">PASSWORD</span>@\
+    nms.example.com:9443/collector
+
+<span class="comment"># Optional remote service control</span>
+set httpd port 2812 and
+    allow golive:<span class="value">UNIQUE_PASSWORD</span>
+    allow localhost</pre></div>
+        <div><p class="eyebrow">Bring the Monit config you have</p><h2>Turn Monit reports into a live service workspace.</h2><p class="section-copy">GoLive accepts M/Monit-compatible XML, imports every configured process, file, filesystem, remote host and system check, and makes unmonitored or failed services impossible to miss.</p><ul class="check-list"><li>Automatic host creation on the first valid report</li><li>Complete service inventory and current state</li><li>Incident creation and recovery from Monit events</li><li>Audited start, stop, restart, monitor and unmonitor actions</li></ul></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head"><div><p class="eyebrow">Access built for operations</p><h2>Give every operator the right view.</h2></div><p class="section-copy">Site visibility and mutation boundaries are enforced by the API—not merely hidden in the interface.</p></div>
+        <div class="roles"><article class="role"><span>Full control</span><h3>Administrator</h3><p>Global configuration, identities, credentials, users, sites and every managed resource.</p></article><article class="role"><span>Operations</span><h3>Manager</h3><p>Network-wide day-to-day monitoring, incident handling and device management.</p></article><article class="role"><span>Scoped control</span><h3>Site manager</h3><p>Operational access limited to specifically granted sites and their devices.</p></article><article class="role"><span>Read only</span><h3>Viewer</h3><p>Clear health, performance and incident visibility without configuration authority.</p></article></div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="container"><div class="cta-card"><p class="eyebrow">Ready when you are</p><h2>Bring your network into one operational view.</h2><p>Start with a Docker host and a DNS name. The complete guide covers public or private TLS, firewall flows, agent packages, Monit, backups and safe upgrades.</p><div class="hero-actions"><a class="button" href="/install/">Open the installation guide</a><a class="button secondary" href="https://github.com/TerminalAddict/golive-nms">View on GitHub</a></div></div></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><div class="footer-grid"><div class="footer-about"><a class="footer-brand" href="/"><img src="/assets/brand.svg" alt="GoLive NMS"></a><p>Modern, self-hosted network operations for the servers, services and sites you are responsible for.</p></div><div class="footer-col"><h3>Project</h3><a href="/features/">Features</a><a href="/install/">Installation</a><a href="https://github.com/TerminalAddict/golive-nms/releases">Releases</a></div><div class="footer-col"><h3>Source</h3><a href="https://github.com/TerminalAddict/golive-nms">GitHub repository</a><a href="https://github.com/TerminalAddict/golive-nms/issues">Issues</a><a href="https://github.com/TerminalAddict/golive-nms/blob/main/LICENSE">AGPL-3.0 license</a></div></div><div class="footer-bottom">GoLive NMS is open-source software.<span>© <span data-year>2026</span> GoLive NMS</span></div></div>
+  </footer>
+</body>
+</html>
